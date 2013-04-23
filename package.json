@@ -1,0 +1,8 @@
+{
+  "name" : "Analytics_Execution_Engine",
+  "description" : "An Execution Engine for an analytics dsl",
+  "dependencies" : {
+      "connect": "1.x"
+    },
+  "version" : "1.0.0"
+}

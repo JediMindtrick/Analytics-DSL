@@ -1,0 +1,4 @@
+to build for browser
+browserify -r ./executionEngine.js -r ./util.js -r ./builder.js > app.js
+
+'{"MSFT":"identity","Dow":"identity","ReserveBoardMeeting":"[\\"yes\\",\\"no\\"]","EarningsRelease":"[\\"yes\\",\\"no\\"]","Earnings":"identity","DayOfWeek":"[\\"monday\\",\\"tuesday\\",\\"wednesday\\",\\"thursday\\",\\"friday\\",\\"saturday\\",\\"sunday\\"]","Position":"[\\"long\\",\\"short\\",\\"flat\\"]","AccountBalance":"identity"}'
