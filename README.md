@@ -13,7 +13,9 @@ This dsl also comes with a basic editor which is modeled off of the concept of a
 
 ## Example 
 
-As a basic example, a securities trader might need a program that would run a given analysis and then tell them whether to buy, sell, or do nothing for a particular security, at a given price and in a given quantity.  Normally this kind of analysis would often be done with either a more specialized trading language or a more general programming language (or in a spreadsheet).  This dsl instead occupies a middle ground between general purpose languages and more specialized domain languages.  The language can, and usually should, be extended when working extensively inside a more specific domain.
+As a basic example, a securities trader might need a program that would run a given analysis and then tell them whether to buy, sell, or do nothing for a particular security, at a given price and in a given quantity.  Normally this kind of analysis would often be done with either a more specialized trading language or a more general programming language (or in a spreadsheet).  This dsl instead occupies a middle ground between general purpose languages and more specialized domain languages.  The language can, and usually should, be extended when working extensively inside a more specific domain. 
+
+[Basic Example](http://calm-ravine-8422.herokuapp.com/)
 
 ## LICENSE
 
