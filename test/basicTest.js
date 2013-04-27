@@ -1,5 +1,5 @@
-var op = require('./operations').op;
-var Engine = require('./executionEngine').Engine;
+var op = require('../lib/operations').op;
+var Engine = require('../lib/executionEngine').Engine;
 
 //this would be the runtime data that is input into the actual application
 var testInput = {

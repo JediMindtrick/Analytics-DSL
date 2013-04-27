@@ -1,227 +1,51 @@
-;(function(e,t,n){function i(n,s){if(!t[n]){if(!e[n]){var o=typeof require=="function"&&require;if(!s&&o)return o(n,!0);if(r)return r(n,!0);throw new Error("Cannot find module '"+n+"'")}var u=t[n]={exports:{}};e[n][0].call(u.exports,function(t){var r=e[n][1][t];return i(r?r:t)},u,u.exports)}return t[n].exports}var r=typeof require=="function"&&require;for(var s=0;s<n.length;s++)i(n[s]);return i})({1:[function(require,module,exports){
-var b = require('./builder2');
-var define = b.define;
-var getAST = b.getAST;
-var identity = b.identity;
-var _true = b._true;
-var _false = b._false;
-var options = b.enumeration;
-var retrieve = b.retrieve;
-var add = b.add;
-var subtract = b.subtract;
-var multiply = b.multiply;
-var divide = b.divide;
-var eq = b.eq;
-var neq = b.neq;
-var and = b.and;
-var or = b.or;
-var gt = b.gt;
-var lt = b.lt;
-var gte = b.gte;
-var lte = b.lte;
-var when = b.cond;
-//extra shims...may move up into builder if we like them
-String.prototype.equals = String.prototype.eq;
-String.prototype.greaterThan = String.prototype.gt;
+require=(function(e,t,n){function i(n,s){if(!t[n]){if(!e[n]){var o=typeof require=="function"&&require;if(!s&&o)return o(n,!0);if(r)return r(n,!0);throw new Error("Cannot find module '"+n+"'")}var u=t[n]={exports:{}};e[n][0].call(u.exports,function(t){var r=e[n][1][t];return i(r?r:t)},u,u.exports)}return t[n].exports}var r=typeof require=="function"&&require;for(var s=0;s<n.length;s++)i(n[s]);return i})({"../lib/util.js":[function(require,module,exports){
+module.exports=require('4i+h83');
+},{}],"4i+h83":[function(require,module,exports){
+(function(){Object.prototype.isObject = true;
+Function.prototype.isFunction = true;
+String.prototype.isString = true;
+Number.prototype.isNumber = true;
+Array.prototype.isArray = true;
 
-var Engine = require('./executionEngine').Engine;
-require('./executionEngine').setReportingLevel('');//turn off verbose
-
-
-define('MSFT');
-define('Dow');
-define('ReserveBoardMeeting',['yes','no']);
-define('EarningsRelease',['yes','no']);
-define('MSFTEarnings');
-define('DayOfWeek',['monday','tuesday','wednesday','thursday','friday','saturday','sunday']);
-define('WhatDayIsIt','retrieve','thursday','DayOfWeek');
-
-define('Position',['long','short','flat']);
-define('Actions',['buy','sell','none']);
-define('Action',
-	when(
-		hasPosition('flat'), getActions('buy'),
-		getActions('none')
-	)
-);
-
-
-//this would be the runtime data that is input into the actual application
-var testInput = {
-	
-	MSFT: 50,
-	Dow: 12000,
-	ReserveBoardMeeting: 'no',
-	MSFTEarnings: 1.35,
-	DayOfWeek: 'tuesday',
-	
-	WhatDayIsIt: null,
-	Position: 'flat',
-	Action: null
-};
-
-var engine = new Engine(getAST());
-var out = engine.execute(testInput);
-console.log(JSON.stringify(out));
-
-/*this is what the results look like:
-{"MSFT":50,"Dow":12000,"ReserveBoardMeeting":1,"MSFTEarnings":1.35,"DayOfWeek":1,"Position":2,"Action":0}
-*/
-},{"./builder2":2,"./executionEngine":3}],2:[function(require,module,exports){
-(function(){var u = require('./util');
-var getArgs = u.getArgs;
-var op = require('./operations').op;
-
-var _true = op.bool._true;
-var _false = op.bool._false;
-
-var ast = {};
-
-var getAST = function(){
-	return ast;	 	
-};
-
-var clearAST = function(){
-	ast = {};
-};
-
-var _getGlobal = function(){
-	//not sure if this is a good idea, but gonna try it out anyway
-	//we're in node
-	if(typeof GLOBAL !== 'undefined'){
-		return GLOBAL;
-	//we're in a browser
-	}else if (typeof window !== 'undefined'){
-		return window;
-	}else{
-		throw '_getGlobal() is unable to determine global context!';
-	}
-
-};
-
-var _defineGlobal = function(name,value){
-	var glob = _getGlobal();
-	glob[name] = value;
-};
-
-var define = function(name,value){
-	//only one parameter designates assigning identity
-	if(!value){
-		value = ['identity'];
-	//array designates enum
-	} else if(value.isArray && value.length > 0 && !op[value[0]]){
-		value.unshift('enumeration');
-	//otherwise lispy-style argument list
-	} else if(!value.isArray){
-		value = getArgs(arguments).slice(1);
-	} else{
-		//default is that we were already passed a lispy-style argument list,
-		//in this case do nothing to alter the value
-	}
-
-	ast[name] = value;
-
-	//We're going to put some stuff up in the global namespace to make life easier
-	var _name = name;
-	var _value = value;
-
-	_value = name;
-	_defineGlobal(_name,_value);
-
-
-	if(value[0] === 'enumeration'){
-		//allows this:  isPosition('flat')
-		//instead of this: retrieve('flat',Position)
-		//for use in boolean expression
-		_name = 'is' + name;
-		_value = function(toRetrieve){
-			return ['retrieve',toRetrieve,name]; // retrieve(toRetrieve,name);
-		};
-		_defineGlobal(_name,_value);
-
-		//allows this: hasPosition('flat')
-		//instead of this: eq(Position,isPosition('flat'))
-		_name = 'has' + name;
-		_value = function(toCompare){
-			return ['eq',name,['retrieve',toCompare,name]];
-		};
-		_defineGlobal(_name,_value);
-
-		//allows this:  getPosition('flat')
-		//instead of this: retrieve('flat',Position)
-		//for use when returning a value
-		_name = 'get' + name;
-		_value = function(toRetrieve){
-			return ['retrieve',toRetrieve,name];
-		};
-		_defineGlobal(_name,_value);
-	}
-};
-String.prototype.eq = function(toCompare){
-	var _name = this.toString();
-	var _glob = _getGlobal();
-
-	if(_glob[_name]){
-		var toReturn = ['eq',_name,toCompare];
-		return toReturn;
+Array.prototype.last = function(){
+	if(this.length > 0){
+		return this[this.length - 1];
 	}
 };
 
-String.prototype.gt = function(toCompare){
-	var _name = this.toString();
-	var _glob = _getGlobal();
-
-	if(_glob[_name]){
-		var toReturn = ['gt',_name,toCompare];
-		return toReturn;
-	}
+String.prototype.parsesNumber = function(){
+	var num = parseFloat(this);
+	return !isNaN(num);
 };
 
-String.prototype.minus = function(rh){
-	var _name = this.toString();
-	var _glob = _getGlobal();
-
-	if(_glob[_name] && _glob[rh]){
-		var toReturn = ['subtract',_name,rh];
-		return toReturn;
-	}
+String.prototype.startsWith = function(str){
+	return this.indexOf(str) === 0;
 };
 
-var identity = ['identity']; 
+//turn arguments into an array and process accordingly
+var getArgs = function(){
+	var _first = Array.prototype.slice.call(arguments);
 
+	var toReturn = Array.prototype.slice.call(_first[0]);
 
-var buildFunc = function(name){
-	return function(){
-		var args = Array.prototype.slice.call(arguments);
-		args.unshift(name);
-		return args;
-	};
+	return toReturn;
 };
 
-exports.define = define;
-exports.getAST = getAST;
-exports.clearAST = clearAST;
-exports.identity = identity;
-exports._true = _true;
-exports._false = _false;
+var _hasValue = function(value){
+	return (typeof value !== 'undefined') && value !== null;
+};
 
-exports.enumeration = buildFunc('enumeration');
-exports.retrieve = buildFunc('retrieve');
-exports.add = buildFunc('add');
-exports.subtract = buildFunc('subtract');
-exports.multiply = buildFunc('multiply');
-exports.divide = buildFunc('divide');
-exports.eq = buildFunc('eq');
-exports.neq = buildFunc('neq');
-exports.and = buildFunc('and');
-exports.or = buildFunc('or');
-exports.gt = buildFunc('gt');
-exports.lt = buildFunc('lt');
-exports.gte = buildFunc('gte');
-exports.lte = buildFunc('lte');
-exports.cond = buildFunc('cond');
+var _stringHasValue = function(str){
+	return _hasValue(str) && str.isString && str !== '';
+};
+
+exports.getArgs = getArgs;
+exports.hasValue = _hasValue;
+exports.stringHasValue = _stringHasValue;
 })()
-},{"./util":4,"./operations":5}],3:[function(require,module,exports){
+},{}],"../lib/executionEngine.js":[function(require,module,exports){
+module.exports=require('zhSrIJ');
+},{}],"zhSrIJ":[function(require,module,exports){
 var u = require('./util');
 var getArgs = u.getArgs;
 var hasValue = u.hasValue;
@@ -356,45 +180,159 @@ exports.Engine = runtimeEngine;
 exports.setReportingLevel = function(level){
 	reportingLevel = level;
 };
-},{"./util":4,"./operations":5}],4:[function(require,module,exports){
-(function(){Object.prototype.isObject = true;
-Function.prototype.isFunction = true;
-String.prototype.isString = true;
-Number.prototype.isNumber = true;
-Array.prototype.isArray = true;
+},{"./util":"4i+h83","./operations":1}],"../lib/builder.js":[function(require,module,exports){
+module.exports=require('aDk1h4');
+},{}],"aDk1h4":[function(require,module,exports){
+(function(){var u = require('./util');
+var getArgs = u.getArgs;
+var op = require('./operations').op;
 
-Array.prototype.last = function(){
-	if(this.length > 0){
-		return this[this.length - 1];
+var _true = op.bool._true;
+var _false = op.bool._false;
+
+var ast = {};
+
+var getAST = function(){
+	return ast;	 	
+};
+
+var clearAST = function(){
+	ast = {};
+};
+
+var _getGlobal = function(){
+	//not sure if this is a good idea, but gonna try it out anyway
+	//we're in node
+	if(typeof GLOBAL !== 'undefined'){
+		return GLOBAL;
+	//we're in a browser
+	}else if (typeof window !== 'undefined'){
+		return window;
+	}else{
+		throw '_getGlobal() is unable to determine global context!';
+	}
+
+};
+
+var _defineGlobal = function(name,value){
+	var glob = _getGlobal();
+	glob[name] = value;
+};
+
+var define = function(name,value){
+	//only one parameter designates assigning identity
+	if(!value){
+		value = ['identity'];
+	//array designates enum
+	} else if(value.isArray && value.length > 0 && !op[value[0]]){
+		value.unshift('enumeration');
+	//otherwise lispy-style argument list
+	} else if(!value.isArray){
+		value = getArgs(arguments).slice(1);
+	} else{
+		//default is that we were already passed a lispy-style argument list,
+		//in this case do nothing to alter the value
+	}
+
+	ast[name] = value;
+
+	//We're going to put some stuff up in the global namespace to make life easier
+	var _name = name;
+	var _value = value;
+
+	_value = name;
+	_defineGlobal(_name,_value);
+
+
+	if(value[0] === 'enumeration'){
+		//allows this:  isPosition('flat')
+		//instead of this: retrieve('flat',Position)
+		//for use in boolean expression
+		_name = 'is' + name;
+		_value = function(toRetrieve){
+			return ['retrieve',toRetrieve,name]; // retrieve(toRetrieve,name);
+		};
+		_defineGlobal(_name,_value);
+
+		//allows this: hasPosition('flat')
+		//instead of this: eq(Position,isPosition('flat'))
+		_name = 'has' + name;
+		_value = function(toCompare){
+			return ['eq',name,['retrieve',toCompare,name]];
+		};
+		_defineGlobal(_name,_value);
+
+		//allows this:  getPosition('flat')
+		//instead of this: retrieve('flat',Position)
+		//for use when returning a value
+		_name = 'get' + name;
+		_value = function(toRetrieve){
+			return ['retrieve',toRetrieve,name];
+		};
+		_defineGlobal(_name,_value);
+	}
+};
+String.prototype.eq = function(toCompare){
+	var _name = this.toString();
+	var _glob = _getGlobal();
+
+	if(_glob[_name]){
+		var toReturn = ['eq',_name,toCompare];
+		return toReturn;
 	}
 };
 
-String.prototype.startsWith = function(str){
-	return this.indexOf(str) === 0;
+String.prototype.gt = function(toCompare){
+	var _name = this.toString();
+	var _glob = _getGlobal();
+
+	if(_glob[_name]){
+		var toReturn = ['gt',_name,toCompare];
+		return toReturn;
+	}
 };
 
-//turn arguments into an array and process accordingly
-var getArgs = function(){
-	var _first = Array.prototype.slice.call(arguments);
+String.prototype.minus = function(rh){
+	var _name = this.toString();
+	var _glob = _getGlobal();
 
-	var toReturn = Array.prototype.slice.call(_first[0]);
-
-	return toReturn;
+	if(_glob[_name]){
+		var toReturn = ['subtract',_name,rh];
+		return toReturn;
+	}
 };
 
-var _hasValue = function(value){
-	return (typeof value !== 'undefined') && value !== null;
+var buildFunc = function(name){
+	return function(){
+		var args = Array.prototype.slice.call(arguments);
+		args.unshift(name);
+		return args;
+	};
 };
 
-var _stringHasValue = function(str){
-	return _hasValue(str) && str.isString && str !== '';
-};
-
-exports.getArgs = getArgs;
-exports.hasValue = _hasValue;
-exports.stringHasValue = _stringHasValue;
+exports.define = define;
+exports.getAST = getAST;
+exports.clearAST = clearAST;
+exports.identity = ['identity']; 
+exports._true = _true;
+exports._false = _false;
+exports.enumeration = buildFunc('enumeration');
+exports.retrieve = buildFunc('retrieve');
+exports.add = buildFunc('add');
+exports.subtract = buildFunc('subtract');
+exports.multiply = buildFunc('multiply');
+exports.divide = buildFunc('divide');
+exports.eq = buildFunc('eq');
+exports.neq = buildFunc('neq');
+exports.and = buildFunc('and');
+exports.or = buildFunc('or');
+exports.gt = buildFunc('gt');
+exports.lt = buildFunc('lt');
+exports.gte = buildFunc('gte');
+exports.lte = buildFunc('lte');
+exports.cond = buildFunc('cond');
 })()
-},{}],5:[function(require,module,exports){
+},{"./util":"4i+h83","./operations":1}],1:[function(require,module,exports){
 (function(){/* 
 Example of how cond() works
 Taxes:{
@@ -667,5 +605,5 @@ var op = {
 
 exports.op = op;
 })()
-},{"./util":4}]},{},[1])
+},{"./util":"4i+h83"}]},{},[])
 ;

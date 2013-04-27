@@ -1,4 +1,4 @@
-var b = require('./builder2');
+var b = require('../lib/builder');
 var define = b.define;
 var getAST = b.getAST;
 var identity = b.identity;
@@ -23,8 +23,9 @@ var when = b.cond;
 String.prototype.equals = String.prototype.eq;
 String.prototype.greaterThan = String.prototype.gt;
 
-var Engine = require('./executionEngine').Engine;
-require('./executionEngine').setReportingLevel('');//turn off verbose
+var e = require('../lib/executionEngine');
+var Engine = e.Engine;
+e.setReportingLevel('');//turn off verbose
 
 
 define('MSFT');

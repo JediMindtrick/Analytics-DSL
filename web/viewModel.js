@@ -1,8 +1,8 @@
-var _util = require('./util.js');
+var _util = require('../lib/util.js');
 var stringHasValue = _util.stringHasValue;
 var hasValue = _util.hasValue;
 
-var b = require('./builder.js');
+var b = require('../lib/builder.js');
 var define = b.define;
 var getAST = b.getAST;
 var clearAST = b.clearAST;
@@ -28,7 +28,7 @@ var when = b.cond;
 String.prototype.equals = String.prototype.eq;
 String.prototype.greaterThan = String.prototype.gt;
 
-var Engine = require('./executionEngine.js').Engine;
+var Engine = require('../lib/executionEngine.js').Engine;
 
 var ViewModel = function(){
 	var self = this;
