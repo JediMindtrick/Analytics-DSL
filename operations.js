@@ -51,9 +51,13 @@ var op = {
 	//enumeration defines an enum
 	enumeration: {
 		Name: 'enumeration',
-		Func: function(value,sym){
+		Func: function(){
 
-			var idx = this.model[sym].args.indexOf(value);
+			var args = getArgs(arguments);
+			var value = args[0];
+			//retrieve the enum array
+			var valueSet = this.model[args.last()].slice(1);
+			var idx = valueSet.indexOf(value); 
 
 			if(idx < 0){
 				throw 'unable to find enumeration value of ' + value + ' for enum ' + sym;
@@ -67,7 +71,8 @@ var op = {
 		Name: 'retrieve',
 		Func: function(value,def){
 
-			var idx = this.model[def].args.indexOf(value);
+			var valueSet = this.model[def].slice(1);
+			var idx = valueSet.indexOf(value);
 
 			if(idx < 0){
 				throw 'unable to retrieve enumeration value of ' + value + ' for enum ' + def;

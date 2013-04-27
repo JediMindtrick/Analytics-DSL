@@ -1,5 +1,5 @@
 ;(function(e,t,n){function i(n,s){if(!t[n]){if(!e[n]){var o=typeof require=="function"&&require;if(!s&&o)return o(n,!0);if(r)return r(n,!0);throw new Error("Cannot find module '"+n+"'")}var u=t[n]={exports:{}};e[n][0].call(u.exports,function(t){var r=e[n][1][t];return i(r?r:t)},u,u.exports)}return t[n].exports}var r=typeof require=="function"&&require;for(var s=0;s<n.length;s++)i(n[s]);return i})({1:[function(require,module,exports){
-var b = require('./builder');
+var b = require('./builder2');
 var define = b.define;
 var getAST = b.getAST;
 var identity = b.identity;
@@ -27,12 +27,15 @@ String.prototype.greaterThan = String.prototype.gt;
 var Engine = require('./executionEngine').Engine;
 require('./executionEngine').setReportingLevel('');//turn off verbose
 
+
 define('MSFT');
 define('Dow');
 define('ReserveBoardMeeting',['yes','no']);
 define('EarningsRelease',['yes','no']);
 define('MSFTEarnings');
 define('DayOfWeek',['monday','tuesday','wednesday','thursday','friday','saturday','sunday']);
+define('WhatDayIsIt','retrieve','thursday','DayOfWeek');
+
 define('Position',['long','short','flat']);
 define('Actions',['buy','sell','none']);
 define('Action',
@@ -42,18 +45,20 @@ define('Action',
 	)
 );
 
+
 //this would be the runtime data that is input into the actual application
 var testInput = {
+	
 	MSFT: 50,
 	Dow: 12000,
 	ReserveBoardMeeting: 'no',
 	MSFTEarnings: 1.35,
 	DayOfWeek: 'tuesday',
+	
+	WhatDayIsIt: null,
 	Position: 'flat',
 	Action: null
 };
-
-//console.log(JSON.stringify(getAST(),2));
 
 var engine = new Engine(getAST());
 var out = engine.execute(testInput);
@@ -62,8 +67,164 @@ console.log(JSON.stringify(out));
 /*this is what the results look like:
 {"MSFT":50,"Dow":12000,"ReserveBoardMeeting":1,"MSFTEarnings":1.35,"DayOfWeek":1,"Position":2,"Action":0}
 */
-},{"./builder":2,"./executionEngine":3}],3:[function(require,module,exports){
-require('./util');
+},{"./builder2":2,"./executionEngine":3}],2:[function(require,module,exports){
+(function(){var u = require('./util');
+var getArgs = u.getArgs;
+var op = require('./operations').op;
+
+var _true = op.bool._true;
+var _false = op.bool._false;
+
+var ast = {};
+
+var getAST = function(){
+	return ast;	 	
+};
+
+var clearAST = function(){
+	ast = {};
+};
+
+var _getGlobal = function(){
+	//not sure if this is a good idea, but gonna try it out anyway
+	//we're in node
+	if(typeof GLOBAL !== 'undefined'){
+		return GLOBAL;
+	//we're in a browser
+	}else if (typeof window !== 'undefined'){
+		return window;
+	}else{
+		throw '_getGlobal() is unable to determine global context!';
+	}
+
+};
+
+var _defineGlobal = function(name,value){
+	var glob = _getGlobal();
+	glob[name] = value;
+};
+
+var define = function(name,value){
+	//only one parameter designates assigning identity
+	if(!value){
+		value = ['identity'];
+	//array designates enum
+	} else if(value.isArray && value.length > 0 && !op[value[0]]){
+		value.unshift('enumeration');
+	//otherwise lispy-style argument list
+	} else if(!value.isArray){
+		value = getArgs(arguments).slice(1);
+	} else{
+		//default is that we were already passed a lispy-style argument list,
+		//in this case do nothing to alter the value
+	}
+
+	ast[name] = value;
+
+	//We're going to put some stuff up in the global namespace to make life easier
+	var _name = name;
+	var _value = value;
+
+	_value = name;
+	_defineGlobal(_name,_value);
+
+
+	if(value[0] === 'enumeration'){
+		//allows this:  isPosition('flat')
+		//instead of this: retrieve('flat',Position)
+		//for use in boolean expression
+		_name = 'is' + name;
+		_value = function(toRetrieve){
+			return ['retrieve',toRetrieve,name]; // retrieve(toRetrieve,name);
+		};
+		_defineGlobal(_name,_value);
+
+		//allows this: hasPosition('flat')
+		//instead of this: eq(Position,isPosition('flat'))
+		_name = 'has' + name;
+		_value = function(toCompare){
+			return ['eq',name,['retrieve',toCompare,name]];
+		};
+		_defineGlobal(_name,_value);
+
+		//allows this:  getPosition('flat')
+		//instead of this: retrieve('flat',Position)
+		//for use when returning a value
+		_name = 'get' + name;
+		_value = function(toRetrieve){
+			return ['retrieve',toRetrieve,name];
+		};
+		_defineGlobal(_name,_value);
+	}
+};
+String.prototype.eq = function(toCompare){
+	var _name = this.toString();
+	var _glob = _getGlobal();
+
+	if(_glob[_name]){
+		var toReturn = ['eq',_name,toCompare];
+		return toReturn;
+	}
+};
+
+String.prototype.gt = function(toCompare){
+	var _name = this.toString();
+	var _glob = _getGlobal();
+
+	if(_glob[_name]){
+		var toReturn = ['gt',_name,toCompare];
+		return toReturn;
+	}
+};
+
+String.prototype.minus = function(rh){
+	var _name = this.toString();
+	var _glob = _getGlobal();
+
+	if(_glob[_name] && _glob[rh]){
+		var toReturn = ['subtract',_name,rh];
+		return toReturn;
+	}
+};
+
+var identity = ['identity']; 
+
+
+var buildFunc = function(name){
+	return function(){
+		var args = Array.prototype.slice.call(arguments);
+		args.unshift(name);
+		return args;
+	};
+};
+
+exports.define = define;
+exports.getAST = getAST;
+exports.clearAST = clearAST;
+exports.identity = identity;
+exports._true = _true;
+exports._false = _false;
+
+exports.enumeration = buildFunc('enumeration');
+exports.retrieve = buildFunc('retrieve');
+exports.add = buildFunc('add');
+exports.subtract = buildFunc('subtract');
+exports.multiply = buildFunc('multiply');
+exports.divide = buildFunc('divide');
+exports.eq = buildFunc('eq');
+exports.neq = buildFunc('neq');
+exports.and = buildFunc('and');
+exports.or = buildFunc('or');
+exports.gt = buildFunc('gt');
+exports.lt = buildFunc('lt');
+exports.gte = buildFunc('gte');
+exports.lte = buildFunc('lte');
+exports.cond = buildFunc('cond');
+})()
+},{"./util":4,"./operations":5}],3:[function(require,module,exports){
+var u = require('./util');
+var getArgs = u.getArgs;
+var hasValue = u.hasValue;
 var op = require('./operations').op;
 
 var reportingLevel = 'verbose';
@@ -76,6 +237,7 @@ var log = function(msg){
 var runtimeEngine = function(semanticModel){
 	this.model = semanticModel;
 	this.op = op;
+	this.currentSymbol = '';
 };
 
 runtimeEngine.prototype.execute = function(inputs){
@@ -89,7 +251,11 @@ runtimeEngine.prototype.execute = function(inputs){
 				throw "unhandled input identifier " + sym;
 			}
 
+			this.currentSymbol = sym;
+
 			this.evaluate(sym);
+
+			this.currentSymbol = '';
 
 			if(invalidOutputValue(this.output[sym])){
 				throw 'operation for ' + sym + ' failed to output a value!';
@@ -116,35 +282,28 @@ runtimeEngine.prototype.evaluate = function(symOrValue){
 		return symOrValue;
 	
 	//operation
-	}else if(symOrValue.isObject || this.model[symOrValue]){
+	}else if(symOrValue.isArray || this.model[symOrValue]){
 
 		var operation = null;
+
 		//grab the operation, which includes an operator as well as arguments
 		if(this.model[symOrValue]){
 			operation = this.model[symOrValue];
-		}else if(symOrValue.operator){
+		}else {
 			operation = symOrValue;
-		}else{
-			throw 'Unable to determine operation for ' + JSON.stringify(symOrValue) + '!';
 		}
-
-		log('operation: ' + JSON.stringify(operation.operator));
 
 		var argsToPass = [];
 
 		//pass input value first, if we have one
-		if(this.inputs[symOrValue]){
+		if(hasValue(this.inputs[symOrValue])){
 			argsToPass.push(this.inputs[symOrValue]);			
 		}
 
 		/*evaluate further arguments*/
-		var args = null;
-		if(this.model[symOrValue]){
-			args = this.model[symOrValue].args;
-		}else if(symOrValue.args){
-			args = symOrValue.args;
-		}else{
-			throw 'Unable to determine arguments for ' + JSON.stringify(symOrValue) + '!';
+		var args = [];
+		if(operation.length > 1){
+			args = operation.slice(1);
 		}
 
 		//retrieve is handled differently, because otherwise we end up trying to retrieve
@@ -155,14 +314,14 @@ runtimeEngine.prototype.evaluate = function(symOrValue){
 		//would end up passing ['rent',0] to retrieve,
 		//when we really want ['rent','Housing']...so we don't evaluate the second retrieve
 		//argument
-		if(operation.operator === op.retrieve){
+		if(operation[0] === 'retrieve'){
 			argsToPass.push(args[0]);
 			argsToPass.push(args[1]);
 		}else{
 			for(var i = 0, l = args.length; i < l; i++){
 				var curr = args[i];
 				//ignore nulls, undefineds and enums
-				if(curr !== null && curr !== undefined && operation.operator !== op.enumeration){
+				if(hasValue(curr)){
 					var toPush = this.evaluate(curr);
 
 					argsToPass.push(toPush);
@@ -173,7 +332,8 @@ runtimeEngine.prototype.evaluate = function(symOrValue){
 		argsToPass.push(symOrValue);
 
 		//finally, apply the function
-		var toReturn = operation.operator.Func.apply(this,argsToPass);
+		var f = this.getFunction(operation[0]);
+		var toReturn = f.apply(this,argsToPass); //operation.operator.Func.apply(this,argsToPass);
 
 		//if it's part of the expected calculations, add it
 		if(this.model[symOrValue]){
@@ -184,301 +344,30 @@ runtimeEngine.prototype.evaluate = function(symOrValue){
 
 	//case error
 	}else{
-		throw 'unknown operator was passed!';
+		throw 'unknown symbol of ' + symOrValue + ' was passed!';
 	}
+};
+
+runtimeEngine.prototype.getFunction = function(name){
+	return this.op[name].Func;
 };
 
 exports.Engine = runtimeEngine;
 exports.setReportingLevel = function(level){
 	reportingLevel = level;
 };
-},{"./util":4,"./operations":5}],2:[function(require,module,exports){
-(function(){require('./util');
-var op = require('./operations').op;
-
-//var Engine = require('./executionEngine').Engine;
-var _identity = op.identity;
-var _true = op.bool._true;
-var _false = op.bool._false;
-var _enumeration = op.enumeration;
-var _retrieve = op.retrieve;
-var _add = op.add;
-var _subtract = op.subtract;
-var _multiply = op.multiply;
-var _divide = op.divide;
-var _eq = op.eq;
-var _neq = op.neq;
-var _and = op.and;
-var _or = op.or;
-var _gt = op.gt;
-var _lt = op.lt;
-var _gte = op.gte;
-var _lte = op.lte;
-var _cond = op.cond;
-
-var ast = {};
-
-var getAST = function(){
-	return ast;	 	
-};
-
-var clearAST = function(){
-	ast = {};
-};
-
-var _getGlobal = function(){
-		//not sure if this is a good idea, but gonna try it out
-	//we're in node
-	if(typeof GLOBAL !== 'undefined'){
-		return GLOBAL;
-	//we're in a browser
-	}else if (typeof window !== 'undefined'){
-		return window;
-	}else{
-		throw '_getGlobal() is unable to determine global context!';
-	}
-
-};
-
-var _defineGlobal = function(name,value){
-	var glob = _getGlobal();
-	glob[name] = value;
-};
-
-var define = function(name,value){
-	//only one parameter designates assigning identity
-	if(!value){
-		value = identity;
-	}
-
-	if(value.isArray){
-		var _array = value;
-		//enumeration expects args, not an array...so calling apply
-		//will turn the array into an args object
-		value = enumeration.apply(this,_array);
-	}
-
-	ast[name] = value;
-
-	//We're going to put some stuff up in the global namespace to make life easier
-	var _name = name;
-	var _value = value;
-
-	_value = name;
-	_defineGlobal(_name,_value);
-
-
-	if(value.operator && value.operator === _enumeration){
-		//allows this:  isHousingSit('Own')
-		//instead of this: retrieve('Own',HousingSit)
-		//for use in boolean expression
-		_name = 'is' + name;
-		_value = function(toRetrieve){
-			return retrieve(toRetrieve,name);
-		};
-		_defineGlobal(_name,_value);
-
-		//allows this: hasHousingSit('Own')
-		//instead of this: eq(HousingSit,isHousingSit('Own'))
-		_name = 'has' + name;
-		_value = function(toCompare){
-			return eq(name,retrieve(toCompare,name));
-		};
-		_defineGlobal(_name,_value);
-
-		//allows this:  isHousingSit('Own')
-		//instead of this: retrieve('Own',HousingSit)
-		//for use when returning a value
-		_name = 'get' + name;
-		_value = function(toRetrieve){
-			return retrieve(toRetrieve,name);
-		};
-		_defineGlobal(_name,_value);
-	}
-};
-String.prototype.eq = function(toCompare){
-	var _name = this.toString();
-	var _glob = _getGlobal();
-
-	if(_glob[_name]){
-		var toReturn = eq(_name,toCompare);
-		return toReturn;
-	}
-};
-
-String.prototype.gt = function(toCompare){
-	var _name = this.toString();
-	var _glob = _getGlobal();
-
-	if(_glob[_name]){
-		var toReturn = gt(_name,toCompare);
-		return toReturn;
-	}
-};
-
-String.prototype.minus = function(rh){
-	var _name = this.toString();
-	var _glob = _getGlobal();
-
-	if(_glob[_name] && _glob[rh]){
-		var toReturn = subtract(_name,rh);
-		return toReturn;
-	}
-};
-
-var identity = {
-	operator: _identity,
-	args: []
-};
-var enumeration = function(){
-	var _args = Array.prototype.slice.call(arguments);
-
-	return {
-		operator: _enumeration,
-		args: _args
-	};
-};
-var retrieve = function(){
-	var _args = Array.prototype.slice.call(arguments);
-
-	return {
-		operator: _retrieve,
-		args: _args
-	};
-};
-var add = function(){
-	var _args = Array.prototype.slice.call(arguments);
-
-	return {
-		operator: _add,
-		args: _args
-	};
-};
-var subtract = function(){
-	var _args = Array.prototype.slice.call(arguments);
-
-	return {
-		operator: _subtract,
-		args: _args
-	};
-};
-var multiply = function(){
-	var _args = Array.prototype.slice.call(arguments);
-
-	return {
-		operator: _multiply,
-		args: _args
-	};
-};
-var divide = function(){
-	var _args = Array.prototype.slice.call(arguments);
-
-	return {
-		operator: _divide,
-		args: _args
-	};
-};
-var eq = function(){
-	var _args = Array.prototype.slice.call(arguments);
-
-	return {
-		operator: _eq,
-		args: _args
-	};
-};
-var neq = function(){
-	var _args = Array.prototype.slice.call(arguments);
-
-	return {
-		operator: _neq,
-		args: _args
-	};
-};
-var and = function(){
-	var _args = Array.prototype.slice.call(arguments);
-
-	return {
-		operator: _and,
-		args: _args
-	};
-};
-var or = function(){
-	var _args = Array.prototype.slice.call(arguments);
-
-	return {
-		operator: _or,
-		args: _args
-	};
-};
-var gt = function(){
-	var _args = Array.prototype.slice.call(arguments);
-
-	return {
-		operator: _gt,
-		args: _args
-	};
-};
-var lt = function(){
-	var _args = Array.prototype.slice.call(arguments);
-
-	return {
-		operator: _lt,
-		args: _args
-	};
-};
-var gte = function(){
-	var _args = Array.prototype.slice.call(arguments);
-
-	return {
-		operator: _gte,
-		args: _args
-	};
-};
-var lte = function(){
-	var _args = Array.prototype.slice.call(arguments);
-
-	return {
-		operator: _lte,
-		args: _args
-	};
-};
-var cond = function(){
-	var _args = Array.prototype.slice.call(arguments);
-
-	return {
-		operator: _cond,
-		args: _args
-	};
-};
-
-exports.define = define;
-exports.getAST = getAST;
-exports.clearAST = clearAST;
-exports.identity = identity;
-exports._true = _true;
-exports._false = _false;
-exports.enumeration = enumeration;
-exports.retrieve = retrieve;
-exports.add = add;
-exports.subtract = subtract;
-exports.multiply = multiply;
-exports.divide = divide;
-exports.eq = eq;
-exports.neq = neq;
-exports.and = and;
-exports.or = or;
-exports.gt = gt;
-exports.lt = lt;
-exports.gte = gte;
-exports.lte = lte;
-exports.cond = cond;
-})()
-},{"./operations":5,"./util":4}],4:[function(require,module,exports){
+},{"./util":4,"./operations":5}],4:[function(require,module,exports){
 (function(){Object.prototype.isObject = true;
 Function.prototype.isFunction = true;
 String.prototype.isString = true;
 Number.prototype.isNumber = true;
 Array.prototype.isArray = true;
+
+Array.prototype.last = function(){
+	if(this.length > 0){
+		return this[this.length - 1];
+	}
+};
 
 String.prototype.startsWith = function(str){
 	return this.indexOf(str) === 0;
@@ -559,9 +448,13 @@ var op = {
 	//enumeration defines an enum
 	enumeration: {
 		Name: 'enumeration',
-		Func: function(value,sym){
+		Func: function(){
 
-			var idx = this.model[sym].args.indexOf(value);
+			var args = getArgs(arguments);
+			var value = args[0];
+			//retrieve the enum array
+			var valueSet = this.model[args.last()].slice(1);
+			var idx = valueSet.indexOf(value); 
 
 			if(idx < 0){
 				throw 'unable to find enumeration value of ' + value + ' for enum ' + sym;
@@ -575,7 +468,8 @@ var op = {
 		Name: 'retrieve',
 		Func: function(value,def){
 
-			var idx = this.model[def].args.indexOf(value);
+			var valueSet = this.model[def].slice(1);
+			var idx = valueSet.indexOf(value);
 
 			if(idx < 0){
 				throw 'unable to retrieve enumeration value of ' + value + ' for enum ' + def;

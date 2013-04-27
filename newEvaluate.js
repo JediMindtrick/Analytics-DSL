@@ -2,52 +2,46 @@ var u = require('./util');
 var getArgs = u.getArgs;
 var hasValue = u.hasValue;
 var op = require('./operations').op;
+var Engine = require('./executionEngine').Engine;
 
-var reportingLevel = 'verbose';
 var log = function(msg){
-	if(reportingLevel === 'verbose'){
-		console.log(msg);
-	}
+	console.log(msg);
 };
 
-var runtimeEngine = function(semanticModel){
-	this.model = semanticModel;
-	this.op = op;
-	this.currentSymbol = '';
-};
+op.enumeration = {
+	Name: 'enumeration',
+	Func: function(){
 
-runtimeEngine.prototype.execute = function(inputs){
-	this.inputs = inputs;
-	this.output = {};
+		var args = getArgs(arguments);
+		var value = args[0];
+		//retrieve the enum array
+		var valueSet = this.model[args.last()].slice(1);
+		var idx = valueSet.indexOf(value); 
 
-	for(var sym in inputs){
-
-		if(inputs.hasOwnProperty(sym)){
-			if(!this.model[sym]){
-				throw "unhandled input identifier " + sym;
-			}
-
-			this.currentSymbol = sym;
-
-			this.evaluate(sym);
-
-			this.currentSymbol = '';
-
-			if(invalidOutputValue(this.output[sym])){
-				throw 'operation for ' + sym + ' failed to output a value!';
-			}
+		if(idx < 0){
+			throw 'unable to find enumeration value of ' + value + ' for enum ' + sym;
 		}
+		
+		return idx;
 	}
-
-	return this.output;
 };
 
+op.retrieve = {
+	Name: 'retrieve',
+	Func: function(value,def){
 
-var invalidOutputValue = function(value){
-	return value === null || value === undefined || !value.isNumber;
+		var valueSet = this.model[def].slice(1);
+		var idx = valueSet.indexOf(value);
+
+		if(idx < 0){
+			throw 'unable to retrieve enumeration value of ' + value + ' for enum ' + def;
+		}
+		
+		return idx;
+	}
 };
 
-runtimeEngine.prototype.evaluate = function(symOrValue){
+Engine.prototype.evaluate = function(symOrValue){
 
 	//already been determined/calculated
 	if(this.output[symOrValue]){
@@ -124,11 +118,39 @@ runtimeEngine.prototype.evaluate = function(symOrValue){
 	}
 };
 
-runtimeEngine.prototype.getFunction = function(name){
+Engine.prototype.getFunction = function(name){
 	return this.op[name].Func;
 };
 
-exports.Engine = runtimeEngine;
-exports.setReportingLevel = function(level){
-	reportingLevel = level;
+//these would be the rules that are built based off of the user input/configuration
+var model = {
+	MSFT: ['identity'],
+	Dow: ['identity'],
+	ReserveBoardMeeting: ['enumeration','yes','no'],
+	EarningsRelease: ['enumeration',"yes","no"],
+	MSFTEarnings: ['identity'],
+	DayOfWeek: ['enumeration',"monday","tuesday","wednesday","thursday","friday","saturday","sunday"],
+	WhatDayIsIt: ['retrieve','thursday','DayOfWeek'],
+	Position: ['enumeration',"long","short","flat"],
+	Actions: ['enumeration',"buy","sell","none"],
+	Action: ['cond', 
+				['eq','Position',['retrieve','flat','Position']],
+					['retrieve','buy','Actions'],
+				['retrieve','none','Actions']]
 };
+
+//this would be the runtime data that is input into the actual application
+var testInput = {
+	MSFT: 50,
+	Dow: 12000,
+	ReserveBoardMeeting: 'no',
+	MSFTEarnings: 1.35,
+	DayOfWeek: 'tuesday',
+	Position: 'long',
+	Action: null,
+	WhatDayIsIt: null
+};
+
+var engine = new Engine(model);
+var out = engine.execute(testInput);
+console.log(JSON.stringify(out));

@@ -1,4 +1,4 @@
-var b = require('./builder');
+var b = require('./builder2');
 var define = b.define;
 var getAST = b.getAST;
 var identity = b.identity;
@@ -26,12 +26,14 @@ String.prototype.greaterThan = String.prototype.gt;
 var Engine = require('./executionEngine').Engine;
 require('./executionEngine').setReportingLevel('');//turn off verbose
 
+
 define('MSFT');
 define('Dow');
 define('ReserveBoardMeeting',['yes','no']);
 define('EarningsRelease',['yes','no']);
 define('MSFTEarnings');
 define('DayOfWeek',['monday','tuesday','wednesday','thursday','friday','saturday','sunday']);
+define('WhatDayIsIt','retrieve','thursday','DayOfWeek');
 define('Position',['long','short','flat']);
 define('Actions',['buy','sell','none']);
 define('Action',
@@ -42,12 +44,13 @@ define('Action',
 );
 
 //this would be the runtime data that is input into the actual application
-var testInput = {
+var testInput = {	
 	MSFT: 50,
 	Dow: 12000,
 	ReserveBoardMeeting: 'no',
 	MSFTEarnings: 1.35,
-	DayOfWeek: 'tuesday',
+	DayOfWeek: 'tuesday',	
+	WhatDayIsIt: null,
 	Position: 'flat',
 	Action: null
 };

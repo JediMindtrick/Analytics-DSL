@@ -4,6 +4,12 @@ String.prototype.isString = true;
 Number.prototype.isNumber = true;
 Array.prototype.isArray = true;
 
+Array.prototype.last = function(){
+	if(this.length > 0){
+		return this[this.length - 1];
+	}
+};
+
 String.prototype.startsWith = function(str){
 	return this.indexOf(str) === 0;
 };
