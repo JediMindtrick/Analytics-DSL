@@ -1,6 +1,7 @@
 var b = require('../lib/builder');
 var define = b.define;
 var getAST = b.getAST;
+var clearAST = b.clearAST;
 var identity = b.identity;
 var _true = b._true;
 var _false = b._false;
@@ -27,7 +28,7 @@ var e = require('../lib/executionEngine');
 var Engine = e.Engine;
 e.setReportingLevel('');//turn off verbose
 
-
+clearAST();
 define('MSFT');
 define('Dow');
 define('ReserveBoardMeeting',['yes','no']);
@@ -57,6 +58,7 @@ var testInput = {
 };
 
 var engine = new Engine(getAST());
+clearAST();
 var out = engine.execute(testInput);
 console.log(JSON.stringify(out));
 

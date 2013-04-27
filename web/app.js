@@ -43,296 +43,9 @@ exports.getArgs = getArgs;
 exports.hasValue = _hasValue;
 exports.stringHasValue = _stringHasValue;
 })()
-},{}],"../lib/executionEngine.js":[function(require,module,exports){
-module.exports=require('zhSrIJ');
-},{}],"zhSrIJ":[function(require,module,exports){
-var u = require('./util');
-var getArgs = u.getArgs;
-var hasValue = u.hasValue;
-var op = require('./operations').op;
-
-var reportingLevel = 'verbose';
-var log = function(msg){
-	if(reportingLevel === 'verbose'){
-		console.log(msg);
-	}
-};
-
-var runtimeEngine = function(semanticModel){
-	this.model = semanticModel;
-	this.op = op;
-	this.currentSymbol = '';
-};
-
-runtimeEngine.prototype.execute = function(inputs){
-	this.inputs = inputs;
-	this.output = {};
-
-	for(var sym in inputs){
-
-		if(inputs.hasOwnProperty(sym)){
-			if(!this.model[sym]){
-				throw "unhandled input identifier " + sym;
-			}
-
-			this.currentSymbol = sym;
-
-			this.evaluate(sym);
-
-			this.currentSymbol = '';
-
-			if(invalidOutputValue(this.output[sym])){
-				throw 'operation for ' + sym + ' failed to output a value!';
-			}
-		}
-	}
-
-	return this.output;
-};
-
-
-var invalidOutputValue = function(value){
-	return value === null || value === undefined || !value.isNumber;
-};
-
-runtimeEngine.prototype.evaluate = function(symOrValue){
-
-	//already been determined/calculated
-	if(this.output[symOrValue]){
-		return this.output[symOrValue];
-	
-	//case primitive value, strings are used for enums
-	}else if(symOrValue.isNumber || (!this.model[symOrValue] && symOrValue.isString)){
-		return symOrValue;
-	
-	//operation
-	}else if(symOrValue.isArray || this.model[symOrValue]){
-
-		var operation = null;
-
-		//grab the operation, which includes an operator as well as arguments
-		if(this.model[symOrValue]){
-			operation = this.model[symOrValue];
-		}else {
-			operation = symOrValue;
-		}
-
-		var argsToPass = [];
-
-		//pass input value first, if we have one
-		if(hasValue(this.inputs[symOrValue])){
-			argsToPass.push(this.inputs[symOrValue]);			
-		}
-
-		/*evaluate further arguments*/
-		var args = [];
-		if(operation.length > 1){
-			args = operation.slice(1);
-		}
-
-		//retrieve is handled differently, because otherwise we end up trying to retrieve
-		//against a previously determined enumeration value
-		//ex. Housing: {op.enum ['own','rent']}
-		//Housing: 'own'
-		//and {op.retrieve ['rent','Housing']}
-		//would end up passing ['rent',0] to retrieve,
-		//when we really want ['rent','Housing']...so we don't evaluate the second retrieve
-		//argument
-		if(operation[0] === 'retrieve'){
-			argsToPass.push(args[0]);
-			argsToPass.push(args[1]);
-		}else{
-			for(var i = 0, l = args.length; i < l; i++){
-				var curr = args[i];
-				//ignore nulls, undefineds and enums
-				if(hasValue(curr)){
-					var toPush = this.evaluate(curr);
-
-					argsToPass.push(toPush);
-				}
-			}
-		}
-		
-		argsToPass.push(symOrValue);
-
-		//finally, apply the function
-		var f = this.getFunction(operation[0]);
-		var toReturn = f.apply(this,argsToPass); //operation.operator.Func.apply(this,argsToPass);
-
-		//if it's part of the expected calculations, add it
-		if(this.model[symOrValue]){
-			this.output[symOrValue] = toReturn;
-		}
-
-		return toReturn;
-
-	//case error
-	}else{
-		throw 'unknown symbol of ' + symOrValue + ' was passed!';
-	}
-};
-
-runtimeEngine.prototype.getFunction = function(name){
-	return this.op[name].Func;
-};
-
-exports.Engine = runtimeEngine;
-exports.setReportingLevel = function(level){
-	reportingLevel = level;
-};
-},{"./util":"4i+h83","./operations":1}],"../lib/builder.js":[function(require,module,exports){
-module.exports=require('aDk1h4');
-},{}],"aDk1h4":[function(require,module,exports){
-(function(){var u = require('./util');
-var getArgs = u.getArgs;
-var op = require('./operations').op;
-
-var _true = op.bool._true;
-var _false = op.bool._false;
-
-var ast = {};
-
-var getAST = function(){
-	return ast;	 	
-};
-
-var clearAST = function(){
-	ast = {};
-};
-
-var _getGlobal = function(){
-	//not sure if this is a good idea, but gonna try it out anyway
-	//we're in node
-	if(typeof GLOBAL !== 'undefined'){
-		return GLOBAL;
-	//we're in a browser
-	}else if (typeof window !== 'undefined'){
-		return window;
-	}else{
-		throw '_getGlobal() is unable to determine global context!';
-	}
-
-};
-
-var _defineGlobal = function(name,value){
-	var glob = _getGlobal();
-	glob[name] = value;
-};
-
-var define = function(name,value){
-	//only one parameter designates assigning identity
-	if(!value){
-		value = ['identity'];
-	//array designates enum
-	} else if(value.isArray && value.length > 0 && !op[value[0]]){
-		value.unshift('enumeration');
-	//otherwise lispy-style argument list
-	} else if(!value.isArray){
-		value = getArgs(arguments).slice(1);
-	} else{
-		//default is that we were already passed a lispy-style argument list,
-		//in this case do nothing to alter the value
-	}
-
-	ast[name] = value;
-
-	//We're going to put some stuff up in the global namespace to make life easier
-	var _name = name;
-	var _value = value;
-
-	_value = name;
-	_defineGlobal(_name,_value);
-
-
-	if(value[0] === 'enumeration'){
-		//allows this:  isPosition('flat')
-		//instead of this: retrieve('flat',Position)
-		//for use in boolean expression
-		_name = 'is' + name;
-		_value = function(toRetrieve){
-			return ['retrieve',toRetrieve,name]; // retrieve(toRetrieve,name);
-		};
-		_defineGlobal(_name,_value);
-
-		//allows this: hasPosition('flat')
-		//instead of this: eq(Position,isPosition('flat'))
-		_name = 'has' + name;
-		_value = function(toCompare){
-			return ['eq',name,['retrieve',toCompare,name]];
-		};
-		_defineGlobal(_name,_value);
-
-		//allows this:  getPosition('flat')
-		//instead of this: retrieve('flat',Position)
-		//for use when returning a value
-		_name = 'get' + name;
-		_value = function(toRetrieve){
-			return ['retrieve',toRetrieve,name];
-		};
-		_defineGlobal(_name,_value);
-	}
-};
-String.prototype.eq = function(toCompare){
-	var _name = this.toString();
-	var _glob = _getGlobal();
-
-	if(_glob[_name]){
-		var toReturn = ['eq',_name,toCompare];
-		return toReturn;
-	}
-};
-
-String.prototype.gt = function(toCompare){
-	var _name = this.toString();
-	var _glob = _getGlobal();
-
-	if(_glob[_name]){
-		var toReturn = ['gt',_name,toCompare];
-		return toReturn;
-	}
-};
-
-String.prototype.minus = function(rh){
-	var _name = this.toString();
-	var _glob = _getGlobal();
-
-	if(_glob[_name]){
-		var toReturn = ['subtract',_name,rh];
-		return toReturn;
-	}
-};
-
-var buildFunc = function(name){
-	return function(){
-		var args = Array.prototype.slice.call(arguments);
-		args.unshift(name);
-		return args;
-	};
-};
-
-exports.define = define;
-exports.getAST = getAST;
-exports.clearAST = clearAST;
-exports.identity = ['identity']; 
-exports._true = _true;
-exports._false = _false;
-exports.enumeration = buildFunc('enumeration');
-exports.retrieve = buildFunc('retrieve');
-exports.add = buildFunc('add');
-exports.subtract = buildFunc('subtract');
-exports.multiply = buildFunc('multiply');
-exports.divide = buildFunc('divide');
-exports.eq = buildFunc('eq');
-exports.neq = buildFunc('neq');
-exports.and = buildFunc('and');
-exports.or = buildFunc('or');
-exports.gt = buildFunc('gt');
-exports.lt = buildFunc('lt');
-exports.gte = buildFunc('gte');
-exports.lte = buildFunc('lte');
-exports.cond = buildFunc('cond');
-})()
-},{"./util":"4i+h83","./operations":1}],1:[function(require,module,exports){
+},{}],"../lib/operations.js":[function(require,module,exports){
+module.exports=require('LMZXaS');
+},{}],"LMZXaS":[function(require,module,exports){
 (function(){/* 
 Example of how cond() works
 Taxes:{
@@ -605,5 +318,294 @@ var op = {
 
 exports.op = op;
 })()
-},{"./util":"4i+h83"}]},{},[])
+},{"./util":"4i+h83"}],"../lib/executionEngine.js":[function(require,module,exports){
+module.exports=require('zhSrIJ');
+},{}],"zhSrIJ":[function(require,module,exports){
+var u = require('./util');
+var getArgs = u.getArgs;
+var hasValue = u.hasValue;
+var op = require('./operations').op;
+
+var reportingLevel = 'verbose';
+var log = function(msg){
+	if(reportingLevel === 'verbose'){
+		console.log(msg);
+	}
+};
+
+var runtimeEngine = function(semanticModel){
+	this.model = semanticModel;
+	this.op = op;
+	this.currentSymbol = '';
+};
+
+runtimeEngine.prototype.execute = function(inputs){
+	this.inputs = inputs;
+	this.output = {};
+
+	for(var sym in inputs){
+
+		if(inputs.hasOwnProperty(sym)){
+			if(!this.model[sym]){
+				throw "unhandled input identifier " + sym;
+			}
+
+			this.currentSymbol = sym;
+
+			this.evaluate(sym);
+
+			this.currentSymbol = '';
+
+			if(invalidOutputValue(this.output[sym])){
+				throw 'operation for ' + sym + ' failed to output a value!';
+			}
+		}
+	}
+
+	return this.output;
+};
+
+
+var invalidOutputValue = function(value){
+	return value === null || value === undefined || !value.isNumber;
+};
+
+runtimeEngine.prototype.evaluate = function(symOrValue){
+
+	//already been determined/calculated
+	if(this.output[symOrValue]){
+		return this.output[symOrValue];
+	
+	//case primitive value, strings are used for enums
+	}else if(symOrValue.isNumber || (!this.model[symOrValue] && symOrValue.isString)){
+		return symOrValue;
+	
+	//operation
+	}else if(symOrValue.isArray || this.model[symOrValue]){
+
+		var operation = null;
+
+		//grab the operation, which includes an operator as well as arguments
+		if(this.model[symOrValue]){
+			operation = this.model[symOrValue];
+		}else {
+			operation = symOrValue;
+		}
+
+		var argsToPass = [];
+
+		//pass input value first, if we have one
+		if(hasValue(this.inputs[symOrValue])){
+			argsToPass.push(this.inputs[symOrValue]);			
+		}
+
+		/*evaluate further arguments*/
+		var args = [];
+		if(operation.length > 1){
+			args = operation.slice(1);
+		}
+
+		//retrieve is handled differently, because otherwise we end up trying to retrieve
+		//against a previously determined enumeration value
+		//ex. Housing: {op.enum ['own','rent']}
+		//Housing: 'own'
+		//and {op.retrieve ['rent','Housing']}
+		//would end up passing ['rent',0] to retrieve,
+		//when we really want ['rent','Housing']...so we don't evaluate the second retrieve
+		//argument
+		if(operation[0] === 'retrieve'){
+			argsToPass.push(args[0]);
+			argsToPass.push(args[1]);
+		}else{
+			for(var i = 0, l = args.length; i < l; i++){
+				var curr = args[i];
+				//ignore nulls, undefineds and enums
+				if(hasValue(curr)){
+					var toPush = this.evaluate(curr);
+
+					argsToPass.push(toPush);
+				}
+			}
+		}
+		
+		argsToPass.push(symOrValue);
+
+		//finally, apply the function
+		var f = this.getFunction(operation[0]);
+		var toReturn = f.apply(this,argsToPass); //operation.operator.Func.apply(this,argsToPass);
+
+		//if it's part of the expected calculations, add it
+		if(this.model[symOrValue]){
+			this.output[symOrValue] = toReturn;
+		}
+
+		return toReturn;
+
+	//case error
+	}else{
+		throw 'unknown symbol of ' + symOrValue + ' was passed!';
+	}
+};
+
+runtimeEngine.prototype.getFunction = function(name){
+	return this.op[name].Func;
+};
+
+exports.Engine = runtimeEngine;
+exports.setReportingLevel = function(level){
+	reportingLevel = level;
+};
+},{"./util":"4i+h83","./operations":"LMZXaS"}],"../lib/builder.js":[function(require,module,exports){
+module.exports=require('aDk1h4');
+},{}],"aDk1h4":[function(require,module,exports){
+(function(){var u = require('./util');
+var getArgs = u.getArgs;
+var op = require('./operations').op;
+
+var _true = op.bool._true;
+var _false = op.bool._false;
+
+var ast = {};
+
+var getAST = function(){
+	return ast;	 	
+};
+
+var clearAST = function(){
+	ast = {};
+};
+
+var _getGlobal = function(){
+	//not sure if this is a good idea, but gonna try it out anyway
+	//we're in node
+	if(typeof GLOBAL !== 'undefined'){
+		return GLOBAL;
+	//we're in a browser
+	}else if (typeof window !== 'undefined'){
+		return window;
+	}else{
+		throw '_getGlobal() is unable to determine global context!';
+	}
+
+};
+
+var _defineGlobal = function(name,value){
+	var glob = _getGlobal();
+	glob[name] = value;
+};
+
+var define = function(name,value){
+	//only one parameter designates assigning identity
+	if(!value){
+		value = ['identity'];
+	//array designates enum
+	} else if(value.isArray && value.length > 0 && !op[value[0]]){
+		value.unshift('enumeration');
+	//otherwise lispy-style argument list
+	} else if(!value.isArray){
+		value = getArgs(arguments).slice(1);
+	} else{
+		//default is that we were already passed a lispy-style argument list,
+		//in this case do nothing to alter the value
+	}
+
+	ast[name] = value;
+
+	//We're going to put some stuff up in the global namespace to make life easier
+	var _name = name;
+	var _value = value;
+
+	_value = name;
+	_defineGlobal(_name,_value);
+
+
+	if(value[0] === 'enumeration'){
+		//allows this:  isPosition('flat')
+		//instead of this: retrieve('flat',Position)
+		//for use in boolean expression
+		_name = 'is' + name;
+		_value = function(toRetrieve){
+			return ['retrieve',toRetrieve,name]; // retrieve(toRetrieve,name);
+		};
+		_defineGlobal(_name,_value);
+
+		//allows this: hasPosition('flat')
+		//instead of this: eq(Position,isPosition('flat'))
+		_name = 'has' + name;
+		_value = function(toCompare){
+			return ['eq',name,['retrieve',toCompare,name]];
+		};
+		_defineGlobal(_name,_value);
+
+		//allows this:  getPosition('flat')
+		//instead of this: retrieve('flat',Position)
+		//for use when returning a value
+		_name = 'get' + name;
+		_value = function(toRetrieve){
+			return ['retrieve',toRetrieve,name];
+		};
+		_defineGlobal(_name,_value);
+	}
+};
+String.prototype.eq = function(toCompare){
+	var _name = this.toString();
+	var _glob = _getGlobal();
+
+	if(_glob[_name]){
+		var toReturn = ['eq',_name,toCompare];
+		return toReturn;
+	}
+};
+
+String.prototype.gt = function(toCompare){
+	var _name = this.toString();
+	var _glob = _getGlobal();
+
+	if(_glob[_name]){
+		var toReturn = ['gt',_name,toCompare];
+		return toReturn;
+	}
+};
+
+String.prototype.minus = function(rh){
+	var _name = this.toString();
+	var _glob = _getGlobal();
+
+	if(_glob[_name]){
+		var toReturn = ['subtract',_name,rh];
+		return toReturn;
+	}
+};
+
+var buildFunc = function(name){
+	return function(){
+		var args = Array.prototype.slice.call(arguments);
+		args.unshift(name);
+		return args;
+	};
+};
+
+exports.define = define;
+exports.getAST = getAST;
+exports.clearAST = clearAST;
+exports.identity = ['identity']; 
+exports._true = _true;
+exports._false = _false;
+exports.enumeration = buildFunc('enumeration');
+exports.retrieve = buildFunc('retrieve');
+exports.add = buildFunc('add');
+exports.subtract = buildFunc('subtract');
+exports.multiply = buildFunc('multiply');
+exports.divide = buildFunc('divide');
+exports.eq = buildFunc('eq');
+exports.neq = buildFunc('neq');
+exports.and = buildFunc('and');
+exports.or = buildFunc('or');
+exports.gt = buildFunc('gt');
+exports.lt = buildFunc('lt');
+exports.gte = buildFunc('gte');
+exports.lte = buildFunc('lte');
+exports.cond = buildFunc('cond');
+})()
+},{"./util":"4i+h83","./operations":"LMZXaS"}]},{},[])
 ;
