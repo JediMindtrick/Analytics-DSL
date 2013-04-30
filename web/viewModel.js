@@ -166,15 +166,13 @@ ViewModel.prototype.getInputs = function() {
 	for(var i = 0, l = _rows.length; i < l; i++){
 		var curr = _rows[i];
 
-		if(curr.readyForEval()){
-			var _in = curr.Input();
-			if(_in && _in !== ''){
-				_in = JSON.parse(curr.Input());
-			}else{
-				_in = null;
-			}
-			toReturn[curr.Name()] = _in;
+		var _in = curr.Input();
+		if(_in && _in !== ''){
+			_in = JSON.parse(curr.Input());
+		}else{
+			_in = null;
 		}
+		toReturn[curr.Name()] = _in;
 	}
 
 	return toReturn;
