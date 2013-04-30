@@ -98,18 +98,30 @@ ViewModel.prototype.addRow = function(name,value,input) {
 			self.run();
 		}
 	});
-	
+
 
 	this.rows.push(toAdd);
 };
 
+
 ViewModel.prototype.run = function() {
+
 	// body...
 	clearAST();
 	this.updateProgram();
 	var engine = new Engine(getAST());
+	engine.subscribeToError(function(err){
+		console.log(JSON.stringify(err));
+	});
 	var inputs = this.getInputs();
-	var outputs = engine.execute(inputs);
+	var outputs = {};
+
+ 	try{
+		outputs = engine.execute(inputs);
+	}catch(ex){
+		console.log(ex);
+	}
+
 	this.mapOutputs(outputs);
 };
 
@@ -120,11 +132,11 @@ ViewModel.prototype.updateProgram = function(){
 	var _rows = this.rows();
 	for(var i = 0, l = _rows.length; i < l; i++){
 		var _def = _rows[i].getDefinition();
-		if(hasValue(_def)){			
+		if(hasValue(_def)){
 
 			if(_def.RawCode === 'identity'){
 				_code += JSON.stringify(_def.Name) + ':' + JSON.stringify('');//				program[_def.Name] = '';
-			}else if(_def.RawCode.startsWith('[')){		
+			}else if(_def.RawCode.startsWith('[')){
 				var _rh = _def.RawCode.replace(/"/g,'\\\\"');
 				_rh = _rh.replace(/\\n/g,' ');
 				_rh = _rh.replace(/\\t/g,' ');
@@ -144,9 +156,6 @@ ViewModel.prototype.updateProgram = function(){
 	}
 
 	_code += "}";
-//	var _code = JSON.stringify(program);
-	//replace \" with \\"
-//	_code = _code.replace(/\\"/g,'\\\\"');
 	this.programCode(_code);
 };
 
@@ -175,13 +184,13 @@ ViewModel.prototype.mapOutputs = function(outputs){
 	console.log(JSON.stringify(outputs));
 
 	var _rows = this.rows();
-	
+
 	for(var property in outputs){
 		if(outputs.hasOwnProperty(property)){
 			_mapValue(_rows,property,outputs[property]);
 		}
 	}
-	
+
 };
 
 var _mapValue = function(rows,name,value){

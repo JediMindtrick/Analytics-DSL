@@ -1,25 +1,11 @@
-var b = require('../lib/builder.js');
-var define = b.define;
-var getAST = b.getAST;
-var clearAST = b.clearAST;
-var identity = b.identity;
-var _true = b._true;
-var _false = b._false;
-var options = b.enumeration;
-var retrieve = b.retrieve;
-var add = b.add;
-var subtract = b.subtract;
-var multiply = b.multiply;
-var divide = b.divide;
-var eq = b.eq;
-var neq = b.neq;
-var and = b.and;
-var or = b.or;
-var gt = b.gt;
-var lt = b.lt;
-var gte = b.gte;
-var lte = b.lte;
-var when = b.cond;
+var importModule = require('../lib/util.js').importModule;
+eval(importModule('../lib/builder.js'));
+//note: we can also pass a function like this function(str){eval(str);}
+//over and when we eval in the other module, the eval will still execute
+//within the scope of the passing module
+
+var options = require('../lib/builder.js').enumeration;
+var when = require('../lib/builder.js').cond;
 //extra shims...may move up into builder if we like them
 String.prototype.equals = String.prototype.eq;
 String.prototype.greaterThan = String.prototype.gt;
