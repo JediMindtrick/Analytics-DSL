@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 	<head>
+		<link rel="stylesheet" type="text/css" href="./adl.css">
 		<script type="text/javascript" src="./knockout.js"></script>
 		<script type="text/javascript" src="./app.js"></script>
 		<script type="text/javascript" src="./viewModel.js"></script>
@@ -14,7 +15,7 @@
 		        <tr><th>Name</th><th>Value</th><th>Input</th><th>Result</th><th></th></tr>
 		    </thead>
 		    <tbody data-bind="foreach: rows">
-		        <tr>
+		        <tr data-bind="css: { error: IsError }">
 		            <td><input type="text" data-bind="value: Name" /></td>
 		            <td><textarea data-bind="value: Value"></textarea></td>
    		            <td><input data-bind="value: Input, disable: !$data.isInput()" /></td>

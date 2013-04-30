@@ -433,8 +433,6 @@ var invalidOutputValue = function(value){
 
 runtimeEngine.prototype.evaluate = function(symOrValue){
 
-//	this.currentEvalSymbol = symOrValue.isString ? symOrValue : 'non-string';
-
 	//already been determined/calculated
 	if(this.output[symOrValue]){
 		this.currentEvalSymbol = '';

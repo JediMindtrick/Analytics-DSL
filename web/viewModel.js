@@ -105,13 +105,21 @@ ViewModel.prototype.addRow = function(name,value,input) {
 
 
 ViewModel.prototype.run = function() {
+	var self = this;
 
 	// body...
+	this.clearErrors();
 	clearAST();
 	this.updateProgram();
 	var engine = new Engine(getAST());
 	engine.subscribeToError(function(err){
 		console.log(JSON.stringify(err));
+		var r = self.getRowByName(err.topSymbol);
+		if(r){
+			r.IsError(true);
+		}else{
+			alert('something went very wrong!');
+		}
 	});
 	var inputs = this.getInputs();
 	var outputs = {};
@@ -123,6 +131,29 @@ ViewModel.prototype.run = function() {
 	}
 
 	this.mapOutputs(outputs);
+};
+
+ViewModel.prototype.getRowByName = function(name){
+	var self = this;
+
+	var _rows = self.rows();
+	for(var i = 0, l = _rows.length; i < l; i++){
+		if(_rows[i].Name() === name){
+			return _rows[i];
+		}
+	}
+
+	return null;
+};
+
+
+ViewModel.prototype.clearErrors = function(){
+	var self = this;
+
+	var _rows = self.rows();
+	for(var i = 0, l = _rows.length; i < l; i++){
+		_rows[i].IsError(false);
+	}
 };
 
 ViewModel.prototype.updateProgram = function(){
@@ -205,6 +236,7 @@ ViewModel.prototype.define = function(name,value){
 };
 
 var row = function(){
+	this.IsError = ko.observable(false);
 	this.Name = ko.observable('');
 	this.Value = ko.observable('');
 	this.Input = ko.observable('');
