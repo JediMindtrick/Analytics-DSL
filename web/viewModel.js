@@ -35,6 +35,7 @@ var ViewModel = function(){
 
 	this.rows = ko.observableArray([]);
 	this.programCode = ko.observable('');
+	this.currentError = ko.observable('error');
 
 	this.removeRow = function() {
 		if(confirm('Are you sure you wish to remove this row?')){
@@ -65,7 +66,7 @@ ViewModel.prototype.loadProgram = function(){
 
 ViewModel.prototype.addRow = function(name,value,input) {
 	var self = this;
-	var toAdd = new row();
+	var toAdd = new row(self);
 	if(typeof name !== 'undefined' && name.isString){
 		toAdd.Name(name);
 	}
@@ -103,7 +104,6 @@ ViewModel.prototype.addRow = function(name,value,input) {
 	this.rows.push(toAdd);
 };
 
-
 ViewModel.prototype.run = function() {
 	var self = this;
 
@@ -116,9 +116,10 @@ ViewModel.prototype.run = function() {
 		console.log(JSON.stringify(err));
 		var r = self.getRowByName(err.topSymbol);
 		if(r){
+			r.ErrorInfo = err;
 			r.IsError(true);
 		}else{
-			alert('something went very wrong!');
+			alert('Something has gone very wrong!');
 		}
 	});
 	var inputs = this.getInputs();
@@ -146,12 +147,14 @@ ViewModel.prototype.getRowByName = function(name){
 	return null;
 };
 
-
 ViewModel.prototype.clearErrors = function(){
 	var self = this;
 
+	this.currentError('');
+
 	var _rows = self.rows();
 	for(var i = 0, l = _rows.length; i < l; i++){
+		_rows[i].ErrorInfo = {};
 		_rows[i].IsError(false);
 	}
 };
@@ -235,8 +238,11 @@ ViewModel.prototype.define = function(name,value){
 	define(name,eval(value));
 };
 
-var row = function(){
+var row = function(parent){
+	this.Sheet = parent;
+	this.ErrorInfo = {};
 	this.IsError = ko.observable(false);
+	this.ErrorCondition = ko.observable('');
 	this.Name = ko.observable('');
 	this.Value = ko.observable('');
 	this.Input = ko.observable('');
@@ -292,4 +298,12 @@ row.prototype.isInput = function(){
 	}
 
 	return false;
+};
+
+row.prototype.setCurrentError = function(name){
+
+	this.Sheet.currentError('');
+	if(this.ErrorInfo && this.ErrorInfo.message){
+		this.Sheet.currentError(this.ErrorInfo.message);
+	}
 };
