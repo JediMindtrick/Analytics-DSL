@@ -6,12 +6,6 @@ var _getCurrentCell = function(){
 	_col = _col.replace('Row_','');
 	
 	return new CellNav(parseInt(_row),_col);
-	/*
-	 {
-		Row: parseInt(_row),
-		Column: _col
-	};
-	*/
 };
 
 var _columnNames = ['Name','Value','Input'];

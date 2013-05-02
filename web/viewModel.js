@@ -49,21 +49,6 @@ ViewModel.prototype.setExample = function(){
 	this.loadProgram();
 };
 
-/*
-var _getCurrentCell = function(){
-	var _row = $(document.activeElement).closest('tr').attr('id');
-	_row = _row.replace('Row_','');
-
-	var _col = $(document.activeElement).attr('name');
-	_col = _col.replace('Row_','');
-	
-	return {
-		Row: parseInt(_row),
-		Column: _col
-	};
-};
-*/
-
 ViewModel.prototype.initShortcuts = function(){
 	var self = this;
 	shortcut.add("Up",function() {
@@ -84,7 +69,6 @@ var _columnNames = ['Name','Value','Input'];
 ViewModel.prototype.navigateNext = function(direction){
 
 	var _cell = _getCurrentCell();
-//	console.log('current cell: ' + JSON.stringify(_cell));
 
 	if(direction === 'up'){
 		_cell = _cell.up();
@@ -102,8 +86,8 @@ ViewModel.prototype.navigateNext = function(direction){
 
 	//go to the next cell
 	var selector = '#Row_' + _cell.Row + ' [name=' + _cell.Col + ']';
-//	console.log('initial new cell selector: ' + selector);
 
+	//bump if selected cell is disabled
 	if($(selector).is(':disabled')
 		&& (direction === 'up' || direction === 'down')){
 			_cell = _cell.left();
