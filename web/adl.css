@@ -1,3 +1,79 @@
 .error {
 	background-color: red;
 };
+
+
+@charset "utf-8";
+/* CSS Document */
+ 
+ 
+.outer {
+position:relative;
+padding:4em 0 3em 0;
+width:54em;
+background:#eee;
+margin:0 auto 3em auto;
+}
+.innera {
+overflow:auto;
+width:54em;
+height:9.6em;
+background:#eee;
+}
+.outer table caption {
+position:absolute;
+width:51.7em;
+text-align:center;
+top:0;
+left:0;
+height:1.5em;
+background:#697210;
+border:0.1em solid #fff;
+color:#fff;
+}
+.outer thead tr {
+position:absolute;
+top:1.5em;
+height:1.5em;
+left:0;
+}
+.outer tfoot td {
+position:absolute;
+width:51.5em;
+text-align:center;
+background:#f0c992;
+border:0.1em solid #000;
+color:#000;
+bottom:0;
+left:0
+}
+.outer th, .outer td {
+width:10em;
+text-align:left;
+}
+ 
+.outer th {
+background:#724a10;
+color:#fff;
+ 
+}
+ 
+.outer .dk {
+    background:#fff;
+}
+ 
+.tableone {width:100%; border-collapse:collapse; margin:0 auto;}
+.tabletwo {width:100%; border-collapse:collapse;}
+.th1 {width:149px;}
+.th2 {width:99px;}
+.th3 {width:99px;}
+.th4 {width:99px;}
+.th5 {width:200px;}
+ 
+.td1 {width:149px;}
+.td2 {width:99px;}
+.td3 {width:99px;}
+.td4 {width:99px;}
+.td5 {width:170px;}
+ 
+.innerb {height:490px; overflow-y:scroll;}

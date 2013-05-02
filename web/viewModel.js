@@ -37,14 +37,9 @@ var ViewModel = function(){
 	this.programCode = ko.observable('');
 	this.currentError = ko.observable('error');
 
-	this.removeRow = function() {
-		if(confirm('Are you sure you wish to remove this row?')){
-        	self.rows.remove(this);
-        	self.run();
-    	}
-    };
-
 	this.setExample();
+
+	this.initShortcuts();
 };
 
 ViewModel.prototype.setExample = function(){
@@ -52,6 +47,71 @@ ViewModel.prototype.setExample = function(){
 
 	this.programCode(_code);
 	this.loadProgram();
+};
+
+/*
+var _getCurrentCell = function(){
+	var _row = $(document.activeElement).closest('tr').attr('id');
+	_row = _row.replace('Row_','');
+
+	var _col = $(document.activeElement).attr('name');
+	_col = _col.replace('Row_','');
+	
+	return {
+		Row: parseInt(_row),
+		Column: _col
+	};
+};
+*/
+
+ViewModel.prototype.initShortcuts = function(){
+	var self = this;
+	shortcut.add("Up",function() {
+		self.navigateNext('up');
+	});
+	shortcut.add("Down",function() {
+		self.navigateNext('down');
+	});
+	shortcut.add("Left",function() {
+		self.navigateNext('left');
+	});
+	shortcut.add("Right",function() {
+		self.navigateNext('right');
+	});
+};
+
+var _columnNames = ['Name','Value','Input'];
+ViewModel.prototype.navigateNext = function(direction){
+
+	var _cell = _getCurrentCell();
+//	console.log('current cell: ' + JSON.stringify(_cell));
+
+	if(direction === 'up'){
+		_cell = _cell.up();
+	}else if(direction === 'down'){
+		_cell = _cell.down();
+	}else if(direction === 'left'){
+		_cell = _cell.left();
+	}else if(direction === 'right'){
+		_cell = _cell.right();
+	}
+
+	if(_cell.Row >= _rowCount){
+		this.addRow();
+	}
+
+	//go to the next cell
+	var selector = '#Row_' + _cell.Row + ' [name=' + _cell.Col + ']';
+//	console.log('initial new cell selector: ' + selector);
+
+	if($(selector).is(':disabled')
+		&& (direction === 'up' || direction === 'down')){
+			_cell = _cell.left();
+	}
+
+	selector = '#Row_' + _cell.Row + ' [name=' + _cell.Col + ']';
+
+	$(selector).focus();
 };
 
 ViewModel.prototype.loadProgram = function(){
@@ -64,9 +124,11 @@ ViewModel.prototype.loadProgram = function(){
 	}
 };
 
+var _rowCount = 0;
 ViewModel.prototype.addRow = function(name,value,input) {
 	var self = this;
 	var toAdd = new row(self);
+	toAdd.Id = _rowCount;
 	if(typeof name !== 'undefined' && name.isString){
 		toAdd.Name(name);
 	}
@@ -102,6 +164,7 @@ ViewModel.prototype.addRow = function(name,value,input) {
 
 
 	this.rows.push(toAdd);
+	_rowCount++;
 };
 
 ViewModel.prototype.run = function() {
@@ -200,13 +263,15 @@ ViewModel.prototype.getInputs = function() {
 	for(var i = 0, l = _rows.length; i < l; i++){
 		var curr = _rows[i];
 
-		var _in = curr.Input();
-		if(_in && _in !== ''){
-			_in = JSON.parse(curr.Input());
-		}else{
-			_in = null;
+		if( stringHasValue(curr.Name().trim())){
+			var _in = curr.Input();
+			if(_in && _in !== ''){
+				_in = JSON.parse(curr.Input());
+			}else{
+				_in = null;
+			}
+			toReturn[curr.Name()] = _in;
 		}
-		toReturn[curr.Name()] = _in;
 	}
 
 	return toReturn;
@@ -222,7 +287,6 @@ ViewModel.prototype.mapOutputs = function(outputs){
 			_mapValue(_rows,property,outputs[property]);
 		}
 	}
-
 };
 
 var _mapValue = function(rows,name,value){
@@ -239,6 +303,7 @@ ViewModel.prototype.define = function(name,value){
 };
 
 var row = function(parent){
+	this.Id = null;
 	this.Sheet = parent;
 	this.ErrorInfo = {};
 	this.IsError = ko.observable(false);
@@ -252,7 +317,7 @@ var row = function(parent){
 row.prototype.getDefinition = function(){
 	var toReturn = null;
 
-	if(stringHasValue(this.Name())){
+	if(stringHasValue(this.Name().trim())){
 		toReturn = {
 			Name: this.Name(),
 			RawCode: 'identity'

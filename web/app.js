@@ -22,6 +22,10 @@ String.prototype.startsWith = function(str){
 	return this.indexOf(str) === 0;
 };
 
+String.prototype.trim = function() {
+    return this.replace(/^\s\s*/, '').replace(/\s\s*$/, '');
+}
+
 //turn arguments into an array and process accordingly
 var getArgs = function(){
 	var _first = Array.prototype.slice.call(arguments);
@@ -402,7 +406,7 @@ runtimeEngine.prototype.execute = function(inputs){
 			this.currentTopSymbol = sym;
 
 			if(!this.model[this.currentTopSymbol]){
-				this.logError("Unhandled input identifier " + this.currentTopSymbol);
+				this.logError("Unhandled input identifier '" + this.currentTopSymbol + "'");
 				this.currentTopSymbol = '';
 
 				continue;
