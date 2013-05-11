@@ -58,13 +58,13 @@ describe('builder', function () {
 		/*{"MSFT":50,"Dow":12000,"ReserveBoardMeeting":1,
 		"MSFTEarnings":1.35,"DayOfWeek":1,
 		"WhatDayIsIt":3,"Position":2,"Action":0}*/
-		expect(out.MSFT).toBe(50);
-		expect(out.Dow).toBe(12000);
-		expect(out.ReserveBoardMeeting).toBe(1);
-		expect(out.MSFTEarnings).toBe(1.35);
-		expect(out.DayOfWeek).toBe(1);
-		expect(out.WhatDayIsIt).toBe(3);
-		expect(out.Position).toBe(2);
-		expect(out.Action).toBe(0);
+		expect(out.MSFT.result).toBe(50);
+		expect(out.Dow.result).toBe(12000);
+		expect(out.ReserveBoardMeeting.result).toBe(1);
+		expect(out.MSFTEarnings.result).toBe(1.35);
+		expect(out.DayOfWeek.result).toBe(1);
+		expect(out.WhatDayIsIt.result).toBe(3);
+		expect(out.Position.result).toBe(2);
+		expect(out.Action.result).toBe(0);
     });
 });

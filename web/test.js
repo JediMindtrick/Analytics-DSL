@@ -2,6 +2,7 @@
 var b = require('../lib/builder');
 var define = b.define;
 var getAST = b.getAST;
+var clearAST = b.clearAST;
 var identity = b.identity;
 var _true = b._true;
 var _false = b._false;
@@ -28,7 +29,7 @@ var e = require('../lib/executionEngine');
 var Engine = e.Engine;
 e.setReportingLevel('');//turn off verbose
 
-
+clearAST();
 define('MSFT');
 define('Dow');
 define('ReserveBoardMeeting',['yes','no']);
@@ -58,13 +59,272 @@ var testInput = {
 };
 
 var engine = new Engine(getAST());
+clearAST();
 var out = engine.execute(testInput);
 console.log(JSON.stringify(out));
 
 /*this is what the results look like:
 {"MSFT":50,"Dow":12000,"ReserveBoardMeeting":1,"MSFTEarnings":1.35,"DayOfWeek":1,"Position":2,"Action":0}
 */
-},{"../lib/builder":2,"../lib/executionEngine":3}],2:[function(require,module,exports){
+},{"../lib/executionEngine":2,"../lib/builder":3}],2:[function(require,module,exports){
+var u = require('./util');
+var getArgs = u.getArgs;
+var hasValue = u.hasValue;
+var op = require('./operations').op;
+
+var reportingLevel = 'verbose';
+var log = function(msg){
+	if(reportingLevel === 'verbose'){
+		console.log(msg);
+	}
+};
+
+var runtimeEngine = function(semanticModel){
+	this.model = semanticModel;
+	this.op = op;
+	this.currentTopSymbol = '';
+	this.currentEvalSymbol = '';
+	this.errorHandler = function(msg){};
+};
+
+runtimeEngine.prototype.subscribeToError = function(handler){
+	this.errorHandler = handler;
+};
+
+runtimeEngine.prototype.logError = function(msg){
+	if(this.errorHandler){
+		var toLog = {
+			topSymbol: this.currentTopSymbol,
+			evalSymbol: this.currentEvalSymbol,
+			message: msg
+		};
+
+		//add to outputs
+		if(!this.output[this.currentTopSymbol]){
+			this.output[this.currentTopSymbol] = {};
+		}
+		if(!this.output[this.currentTopSymbol].errors){
+			this.output[this.currentTopSymbol].errors = [];
+		}
+		this.output[this.currentTopSymbol].errors.push({
+			evalSymbol: this.currentEvalSymbol,
+			message: msg	
+		});
+
+		//notify
+		this.errorHandler(toLog);
+	}
+};
+
+var _addToOutput = function(topSymbol,output,tag,value){
+	if(!output[topSymbol]){
+		output[topSymbol] = {};
+	}
+	output[topSymbol][tag] = value;
+};
+
+runtimeEngine.prototype.execute = function(inputs){
+	this.inputs = inputs;
+	this.output = {};
+
+	for(var sym in inputs){
+
+		if(inputs.hasOwnProperty(sym)){
+
+			//for tracing and helpful error messages
+			this.currentTopSymbol = sym;
+
+			if(!this.model[this.currentTopSymbol]){
+				this.logError("Unhandled input identifier '" + this.currentTopSymbol + "'");
+				this.currentTopSymbol = '';
+
+				continue;
+			}
+
+			try{
+				this.evaluate(this.currentTopSymbol);
+
+				if(invalidOutputValue(this.output[this.currentTopSymbol])){
+					this.logError('Operation for ' + this.currentTopSymbol + ' failed to output a valid value!');
+				}
+
+			}catch(ex){
+				this.logError(ex);
+			}
+
+			this.currentTopSymbol = '';
+			this.currentEvalSymbol = '';
+		}
+	}
+
+	return this.output;
+};
+
+
+var invalidOutputValue = function(value){
+	return value === null || value === undefined || !value.isNumber;
+};
+
+runtimeEngine.prototype.evaluate = function(symOrValue){
+
+	//already been determined/calculated
+	if(this.output[symOrValue]){
+		this.currentEvalSymbol = '';
+		return this.output[symOrValue];
+	
+	//case primitive value, strings are used for enums
+	}else if(symOrValue.isNumber || (!this.model[symOrValue] && symOrValue.isString)){
+		this.currentEvalSymbol = '';
+		return symOrValue;
+	
+	//operation
+	}else if(symOrValue.isArray || this.model[symOrValue]){
+
+		var operation = null;
+
+		//grab the operation, which includes an operator as well as arguments
+		if(this.model[symOrValue]){
+			operation = this.model[symOrValue];
+			this.currentEvalSymbol = symOrValue;
+		}else {
+			operation = symOrValue;
+			this.currentEvalSymbol = this.op[operation[0]].Name;
+		}
+
+		var argsToPass = [];
+
+		//is an input value required?
+		if(this.op[operation[0]].RequiresInput
+			&& !hasValue(this.inputs[symOrValue])){
+			throw 'Input required for ' + symOrValue + ' in order to complete calculations.';
+		//if so, retrieve it
+		} else if (this.op[operation[0]].RequiresInput) {
+			argsToPass.push(this.inputs[symOrValue]);			
+		}
+
+		/*evaluate further arguments*/
+		var args = [];
+		if(operation.length > 1){
+			args = operation.slice(1);
+
+			for(var i = 0, l = args.length; i < l; i++){
+				var curr = args[i];
+				//ignore nulls, undefineds and enums
+				if(hasValue(curr)){
+
+					//not to eval
+					if(this.op[operation[0]].PassWithoutEval){
+						argsToPass.push(curr);
+					//or to eval?
+					}else{
+						argsToPass.push(this.evaluate(curr));
+					}
+				}
+			}
+		}
+
+		//last argument is the symbol or value, in case we need
+		//to do a look up from the operation		
+		argsToPass.push(symOrValue);
+
+		//finally, apply the function
+		var f = this.getFunction(operation[0]);
+		var toReturn = f.apply(this,argsToPass);
+
+		//if it's part of the expected calculations, add it
+		if(this.model[symOrValue] && symOrValue === this.currentTopSymbol){
+			//_addToOutput
+			_addToOutput(this.output,this.currentTopSymbol,'result',toReturn);
+		}
+
+		this.currentEvalSymbol = '';
+		return toReturn;
+
+	//case error
+	}else{
+		throw 'Unknown symbol of ' + symOrValue + ' was passed to evaluator!';
+	}
+
+	this.currentEvalSymbol = '';
+};
+
+runtimeEngine.prototype.getFunction = function(name){
+	return this.op[name].Func;
+};
+
+exports.Engine = runtimeEngine;
+exports.setReportingLevel = function(level){
+	reportingLevel = level;
+};
+},{"./util":4,"./operations":5}],4:[function(require,module,exports){
+(function(){Object.prototype.isObject = true;
+Function.prototype.isFunction = true;
+String.prototype.isString = true;
+Number.prototype.isNumber = true;
+Array.prototype.isArray = true;
+
+Array.prototype.last = function(){
+	if(this.length > 0){
+		return this[this.length - 1];
+	}
+};
+
+String.prototype.parsesNumber = function(){
+	var num = parseFloat(this);
+	return !isNaN(num);
+};
+
+String.prototype.startsWith = function(str){
+	return this.indexOf(str) === 0;
+};
+
+String.prototype.trim = function() {
+    return this.replace(/^\s\s*/, '').replace(/\s\s*$/, '');
+}
+
+//turn arguments into an array and process accordingly
+var getArgs = function(){
+	var _first = Array.prototype.slice.call(arguments);
+
+	var toReturn = Array.prototype.slice.call(_first[0]);
+
+	return toReturn;
+};
+
+var _hasValue = function(value){
+	return (typeof value !== 'undefined') && value !== null;
+};
+
+var _stringHasValue = function(str){
+	return _hasValue(str) && str.isString && str !== '';
+};
+
+var importNum = 0;
+var _importModule = function(modPath){
+	var toReturn = '';
+
+	importNum++;
+	var name = 'import_module_' + importNum;
+
+	toReturn += name + ' = require(\'' + modPath +'\');\n';
+	var modObj = require(modPath);
+	
+	for(var func in modObj){
+		if(modObj.hasOwnProperty(func)){
+			var evalString = func + ' = ' + name + '.' + func + ';'
+			toReturn += evalString + '\n';
+		}
+	}
+	
+	return toReturn;
+};
+
+exports.getArgs = getArgs;
+exports.hasValue = _hasValue;
+exports.stringHasValue = _stringHasValue;
+exports.importModule = _importModule;
+})()
+},{}],3:[function(require,module,exports){
 (function(){var u = require('./util');
 var getArgs = u.getArgs;
 var op = require('./operations').op;
@@ -214,185 +474,7 @@ exports.gte = buildFunc('gte');
 exports.lte = buildFunc('lte');
 exports.cond = buildFunc('cond');
 })()
-},{"./util":4,"./operations":5}],3:[function(require,module,exports){
-var u = require('./util');
-var getArgs = u.getArgs;
-var hasValue = u.hasValue;
-var op = require('./operations').op;
-
-var reportingLevel = 'verbose';
-var log = function(msg){
-	if(reportingLevel === 'verbose'){
-		console.log(msg);
-	}
-};
-
-var runtimeEngine = function(semanticModel){
-	this.model = semanticModel;
-	this.op = op;
-	this.currentSymbol = '';
-};
-
-runtimeEngine.prototype.execute = function(inputs){
-	this.inputs = inputs;
-	this.output = {};
-
-	for(var sym in inputs){
-
-		if(inputs.hasOwnProperty(sym)){
-			if(!this.model[sym]){
-				throw "unhandled input identifier " + sym;
-			}
-
-			this.currentSymbol = sym;
-
-			this.evaluate(sym);
-
-			this.currentSymbol = '';
-
-			if(invalidOutputValue(this.output[sym])){
-				throw 'operation for ' + sym + ' failed to output a value!';
-			}
-		}
-	}
-
-	return this.output;
-};
-
-
-var invalidOutputValue = function(value){
-	return value === null || value === undefined || !value.isNumber;
-};
-
-runtimeEngine.prototype.evaluate = function(symOrValue){
-
-	//already been determined/calculated
-	if(this.output[symOrValue]){
-		return this.output[symOrValue];
-	
-	//case primitive value, strings are used for enums
-	}else if(symOrValue.isNumber || (!this.model[symOrValue] && symOrValue.isString)){
-		return symOrValue;
-	
-	//operation
-	}else if(symOrValue.isArray || this.model[symOrValue]){
-
-		var operation = null;
-
-		//grab the operation, which includes an operator as well as arguments
-		if(this.model[symOrValue]){
-			operation = this.model[symOrValue];
-		}else {
-			operation = symOrValue;
-		}
-
-		var argsToPass = [];
-
-		//pass input value first, if we have one
-		if(hasValue(this.inputs[symOrValue])){
-			argsToPass.push(this.inputs[symOrValue]);			
-		}
-
-		/*evaluate further arguments*/
-		var args = [];
-		if(operation.length > 1){
-			args = operation.slice(1);
-		}
-
-		//retrieve is handled differently, because otherwise we end up trying to retrieve
-		//against a previously determined enumeration value
-		//ex. Housing: {op.enum ['own','rent']}
-		//Housing: 'own'
-		//and {op.retrieve ['rent','Housing']}
-		//would end up passing ['rent',0] to retrieve,
-		//when we really want ['rent','Housing']...so we don't evaluate the second retrieve
-		//argument
-		if(operation[0] === 'retrieve'){
-			argsToPass.push(args[0]);
-			argsToPass.push(args[1]);
-		}else{
-			for(var i = 0, l = args.length; i < l; i++){
-				var curr = args[i];
-				//ignore nulls, undefineds and enums
-				if(hasValue(curr)){
-					var toPush = this.evaluate(curr);
-
-					argsToPass.push(toPush);
-				}
-			}
-		}
-		
-		argsToPass.push(symOrValue);
-
-		//finally, apply the function
-		var f = this.getFunction(operation[0]);
-		var toReturn = f.apply(this,argsToPass); //operation.operator.Func.apply(this,argsToPass);
-
-		//if it's part of the expected calculations, add it
-		if(this.model[symOrValue]){
-			this.output[symOrValue] = toReturn;
-		}
-
-		return toReturn;
-
-	//case error
-	}else{
-		throw 'unknown symbol of ' + symOrValue + ' was passed!';
-	}
-};
-
-runtimeEngine.prototype.getFunction = function(name){
-	return this.op[name].Func;
-};
-
-exports.Engine = runtimeEngine;
-exports.setReportingLevel = function(level){
-	reportingLevel = level;
-};
-},{"./util":4,"./operations":5}],4:[function(require,module,exports){
-(function(){Object.prototype.isObject = true;
-Function.prototype.isFunction = true;
-String.prototype.isString = true;
-Number.prototype.isNumber = true;
-Array.prototype.isArray = true;
-
-Array.prototype.last = function(){
-	if(this.length > 0){
-		return this[this.length - 1];
-	}
-};
-
-String.prototype.parsesNumber = function(){
-	var num = parseFloat(this);
-	return !isNaN(num);
-};
-
-String.prototype.startsWith = function(str){
-	return this.indexOf(str) === 0;
-};
-
-//turn arguments into an array and process accordingly
-var getArgs = function(){
-	var _first = Array.prototype.slice.call(arguments);
-
-	var toReturn = Array.prototype.slice.call(_first[0]);
-
-	return toReturn;
-};
-
-var _hasValue = function(value){
-	return (typeof value !== 'undefined') && value !== null;
-};
-
-var _stringHasValue = function(str){
-	return _hasValue(str) && str.isString && str !== '';
-};
-
-exports.getArgs = getArgs;
-exports.hasValue = _hasValue;
-exports.stringHasValue = _stringHasValue;
-})()
-},{}],5:[function(require,module,exports){
+},{"./util":4,"./operations":5}],5:[function(require,module,exports){
 (function(){/* 
 Example of how cond() works
 Taxes:{
@@ -439,6 +521,7 @@ var op = {
 	},
 	identity: {
 		Name: 'identity',
+		RequiresInput: true,
 		Func: function(value,sym){
 			return value;
 		}
@@ -446,6 +529,7 @@ var op = {
 	//enumeration defines an enum
 	enumeration: {
 		Name: 'enumeration',
+		RequiresInput: true,
 		Func: function(){
 
 			var args = getArgs(arguments);
@@ -461,9 +545,19 @@ var op = {
 			return idx;
 		}
 	},
+	
 	//retrieve is used to retrieve the value of an enum
+	//PassWithoutEval = true, because otherwise we end up trying to retrieve
+	//against a previously determined enumeration value
+	//ex. Housing: {op.enum ['own','rent']}
+	//Housing: 'own'
+	//and {op.retrieve ['rent','Housing']}
+	//would end up passing ['rent',0] to retrieve,
+	//when we really want ['rent','Housing']...so we don't evaluate the second retrieve
+	//argument
 	retrieve: {
 		Name: 'retrieve',
+		PassWithoutEval: true,
 		Func: function(value,def){
 
 			var valueSet = this.model[def].slice(1);

@@ -268,7 +268,7 @@ ViewModel.prototype.mapOutputs = function(outputs){
 
 	for(var property in outputs){
 		if(outputs.hasOwnProperty(property)){
-			_mapValue(_rows,property,outputs[property]);
+			_mapValue(_rows,property,outputs[property].result);
 		}
 	}
 };
