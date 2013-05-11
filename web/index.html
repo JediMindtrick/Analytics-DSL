@@ -16,6 +16,8 @@
 		Copyright &copy; 2013 by Brandon Wilhite
 		<h1>Analytics DSL Editor</h1>
 		<select data-bind="options: programNames, value: currentProgramName"></select>
+		<button data-bind="click: loadProgram">Load Program</button>
+
 		<input style="width:100%;" data-bind="enable: false, value: currentError" />
 	
 <table class="tableone" style="height:500px;">
@@ -58,7 +60,6 @@
 
 
 		<div style="width: 75%; height: 400px; margin-top: 50px;">
-			<button data-bind="click: loadProgram">Load Program</button>
 			<textarea style="width:100%; height:100%;"  data-bind="value: programCode" ></textarea>
 		</div>
 		

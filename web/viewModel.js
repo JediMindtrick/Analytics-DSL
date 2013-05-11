@@ -33,11 +33,11 @@ var Engine = require('../lib/executionEngine.js').Engine;
 var ViewModel = function(){
 	var self = this;
 
-	this.programNames = ko.observableArray(['New','Program1','Program2']);
-	this.currentProgramName = ko.observable('Program2');
+	this.programNames = ko.observableArray(['New','Load From Text','Program1'/*,'Program2'*/]);
+	this.currentProgramName = ko.observable('Program1');
 	this.programs = {
 		'Program1': program1,
-		'Program2': program2
+	//	'Program2': program2
 	};
 	this.paused = false;
 
@@ -112,6 +112,9 @@ ViewModel.prototype.loadProgram = function(){
 
 	if(this.currentProgramName() === 'New'){
 		this.programCode('');
+		return;
+	}else if(this.currentProgramName() === 'Load From Text'){
+		//do nothing
 	}else{
 		//set the programCode
 		this.programCode(this.programs[this.currentProgramName()]);
