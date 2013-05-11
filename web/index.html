@@ -8,11 +8,14 @@
 		<script type="text/javascript" src="./viewModel.js"></script>
 		<script type="text/javascript" src="./shortcut.js"></script>
 		<script type="text/javascript" src="./jquery-2.0.0.min.js"></script>
+		<script type="text/javascript" src="./program1.js"></script>
+<!--		<script type="text/javascript" src="./program2.js"></script>-->
 	</head>
 	<body>
 		<a href="https://github.com/JediMindtrick/Analytics-DSL">License & Github repo</a><br />
 		Copyright &copy; 2013 by Brandon Wilhite
 		<h1>Analytics DSL Editor</h1>
+		<select data-bind="options: programNames, value: currentProgramName"></select>
 		<input style="width:100%;" data-bind="enable: false, value: currentError" />
 	
 <table class="tableone" style="height:500px;">

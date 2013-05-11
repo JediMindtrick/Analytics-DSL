@@ -33,6 +33,14 @@ var Engine = require('../lib/executionEngine.js').Engine;
 var ViewModel = function(){
 	var self = this;
 
+	this.programNames = ko.observableArray(['New','Program1','Program2']);
+	this.currentProgramName = ko.observable('Program2');
+	this.programs = {
+		'Program1': program1,
+		'Program2': program2
+	};
+	this.paused = false;
+
 	this.rows = ko.observableArray([]);
 	this.programCode = ko.observable('');
 	this.currentError = ko.observable('error');
@@ -43,7 +51,7 @@ var ViewModel = function(){
 };
 
 ViewModel.prototype.setExample = function(){
-	var _code = '{"MSFT":"","Dow":"","ReserveBoardMeeting":"[\\"yes\\",\\"no\\"]","EarningsRelease":"[\\"yes\\",\\"no\\"]","Earnings":"","DayOfWeek":"[\\"monday\\",\\"tuesday\\",\\"wednesday\\",\\"thursday\\",\\"friday\\",\\"saturday\\",\\"sunday\\"]","Position":"[\\"long\\",\\"short\\",\\"flat\\"]","AccountBalance":"","Actions":"[\\"buy\\",\\"sell\\",\\"none\\"]","Action":"when(\\n\\thasPosition(\\"flat\\"), getActions(\\"buy\\"),\\n\\tgetActions(\\"none\\")\\n)"}';
+	var _code = program1;
 
 	this.programCode(_code);
 	this.loadProgram();
@@ -99,13 +107,48 @@ ViewModel.prototype.navigateNext = function(direction){
 };
 
 ViewModel.prototype.loadProgram = function(){
+	this.clearAllRows();
+	this.clearErrors();
+
+	if(this.currentProgramName() === 'New'){
+		this.programCode('');
+	}else{
+		//set the programCode
+		this.programCode(this.programs[this.currentProgramName()]);
+	}
+
 	var _code = this.programCode();
 	var _prog = JSON.parse(_code);
 	for(var def in _prog){
 		if(_prog.hasOwnProperty(def)){
-			this.addRow(def,_prog[def]);
+
+			var nextRow = this.getNextEmptyRow();
+			if(nextRow === null){
+				this.addRow(def,_prog[def]);
+			}else{
+				nextRow.Name(def);
+				nextRow.Value(_prog[def]);
+				nextRow.Input('');
+				nextRow.Result('');
+			}
 		}
 	}
+};
+
+ViewModel.prototype.clearAllRows = function(){
+	var _rows = this.rows();
+
+	this.paused = true;
+
+	for(var i = 0, l = _rows.length; i < l; i++){
+		var curr = _rows[i];
+		curr.Name('');
+		curr.Value('');
+		curr.Input('');
+		curr.Result('');
+	}	
+
+	this.paused = false;
 };
 
 var _rowCount = 0;
@@ -151,7 +194,24 @@ ViewModel.prototype.addRow = function(name,value,input) {
 	_rowCount++;
 };
 
+ViewModel.prototype.getNextEmptyRow = function(){
+	var _rows = this.rows();
+
+	for(var i = 0, l = _rows.length; i < l; i++){
+		if(_rows[i].isEmpty()){
+			_rows[i].Result('');
+			return _rows[i];
+		}
+	}
+
+	return null;
+};
+
 ViewModel.prototype.run = function() {
+	if(this.paused){
+		return;
+	}
+
 	var self = this;
 
 	// body...
@@ -355,4 +415,13 @@ row.prototype.setCurrentError = function(name){
 	if(this.ErrorInfo && this.ErrorInfo.message){
 		this.Sheet.currentError(this.ErrorInfo.message);
 	}
+};
+
+row.prototype.isEmpty = function(){
+
+	var hasVal = stringHasValue(this.Name())
+		|| stringHasValue(this.Value())
+		|| stringHasValue(this.Input());
+
+	return !hasVal;
 };
