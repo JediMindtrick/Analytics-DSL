@@ -15,15 +15,16 @@
 		<a href="https://github.com/JediMindtrick/Analytics-DSL">License & Github repo</a><br />
 		Copyright &copy; 2013 by Brandon Wilhite
 		<h1>Analytics DSL Editor</h1>
+		<h2>Only tested in Chrome, ymmv.</h2>
 		<select data-bind="options: programNames, value: currentProgramName"></select>
 		<button data-bind="click: loadProgram">Load Program</button>
 		<br />
 		<label>Errors & Messages:</label>
 		<input style="width:100%;" data-bind="enable: false, value: currentError" />
 		<br>
-		<label>f(x):</label>
+		<label>f(x):&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;&lt;focus on cell and [Enter] to edit a formula, [Ctrl+Enter] to update the formula in cell&gt;&gt;</label>
 		<br>
-		<textarea id="currentFormula" style="width:100%; height: 20px;" data-bind="value: currentFormula, hasFocus: isEditingFormula"></textarea>
+		<textarea id="currentFormula" style="width:100%; height: 20px;" data-bind="value: currentFormula, hasFocus: isEditingFormula, css: { activeEditor: isEditingFormula }"></textarea>
 	
 <table class="tableone" style="height:500px;">
     <thead>
@@ -40,14 +41,16 @@
 	            <table class="tabletwo">   
 	            	<thead></thead>                   
 	                <tbody data-bind="foreach: rows" >
-	                    <tr data-bind="attr: { id: 'Row_' + Id }, css: { error: IsError }, event: { mouseover: setCurrentError}">
+	                    <tr data-bind="attr: { id: 'Row_' + Id }, css: { error: IsError }">
+	                    	<!--
+	                    <tr data-bind="attr: { id: 'Row_' + Id }, css: { error: IsError }, event: { mouseover: setCurrentError}">-->
 	                        <td class="tdFIX">
-	                            <input name="Name" type="text" data-bind="value: Name, event: {focus: setCurrentError}" /></td>
+	                            <input name="Name" type="text" data-bind="value: Name, event: {focus: setCurrentError}, click: selectCell" /></td>
 	                        <td class="tdFIX">
-	                        	<textarea style="height:15px;" name="Value" data-bind="value: Value, event: {focus: setCurrentError}"></textarea>
+	                        	<textarea style="height:15px;" name="Value" data-bind="value: Value, event: {focus: setCurrentError}, click: selectCell"></textarea>
 	                            </td>
 	                        <td class="tdFIX">
-	                        	<input name="Input" data-bind="value: Input, disable: !$data.isInput(), event: {focus: setCurrentError}" />
+	                        	<input name="Input" data-bind="value: Input, disable: !$data.isInput(), event: {focus: setCurrentError}, click: selectCell" />
 	                            </td>
 	                        <td class="tdFIX">
 	                        	<input name="Result" type="text" data-bind="value: Result, disable: true, event: {focus: setCurrentError}" />

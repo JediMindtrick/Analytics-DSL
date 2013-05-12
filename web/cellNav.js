@@ -17,6 +17,11 @@ var CellNav = function(row,col){
 	this.Col = col;
 };
 
+CellNav.prototype.getSelector = function(){
+	var _cellSelector = '#Row_' + this.Row + ' [name=' + this.Col + ']';
+	return _cellSelector;
+};
+
 CellNav.prototype.up = function(){
 	var _r = this.Row - 1 < 0 ? 0 : this.Row - 1;
 

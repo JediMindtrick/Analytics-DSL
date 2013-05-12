@@ -42,7 +42,7 @@ var ViewModel = function(){
 	this.paused = false;
 
 	this.isEditingFormula = ko.observable(false);
-	this.currentFormula = ko.observable('your code here');
+	this.currentFormula = ko.observable('your formula here');
 	this.currentCell = null;
 
 	this.rows = ko.observableArray([]);
@@ -63,41 +63,89 @@ ViewModel.prototype.setExample = function(){
 
 ViewModel.prototype.initShortcuts = function(){
 	var self = this;
-	shortcut.add("Up",function() {
-		self.navigateNext('up');
-		self.bindFormula();	
-	});
-	shortcut.add("Down",function() {
-		self.navigateNext('down');
-		self.bindFormula();	
-	});
-	shortcut.add("Left",function() {
-		self.navigateNext('left');
-		self.bindFormula();	
-	});
-	shortcut.add("Right",function() {
-		self.navigateNext('right');
-		self.bindFormula();	
-	});
-	shortcut.add("Enter",function(){
+	shortcut.add("Up",function(e) {
+		self.handleArrowKey('up',e);
+	},{propagate: true});
+	shortcut.add("Down",function(e) {
+		self.handleArrowKey('down',e);	
+	},{propagate: true});
+	shortcut.add("Left",function(e) {
+		self.handleArrowKey('left',e);
+	},{propagate: true});
+	shortcut.add("Right",function(e) {
+		self.handleArrowKey('right',e);
+	},{propagate: true});
+	shortcut.add("Enter",function(e){
 		if(self.isEditingFormula()){
 			return;
 		}else{
+			if(e && e.preventDefault && !self.isEditingFormula()){
+				e.preventDefault();
+			}
+
 			self.editFormula();			
 		}
-	});//,{propagate: false});
+	},{propagate: true});
 	shortcut.add("Ctrl+Enter",function(){
 		var _cell = self.currentCell;
-		if(_cell){
-			var selector = '#Row_' + _cell.Row + ' [name=' + _cell.Col + ']';
+		if(_cell && self.isEditingFormula()){
+			self.changeFormula(_cell);
 
-			$(selector).focus();
+			var _cellSelector = '#Row_' + _cell.Row + ' [name=' + _cell.Col + ']';
+			$(_cellSelector).focus();
+
+			self.isEditingFormula(false);
 		}
-	});
+	},{propagate: false});
 };
 
-ViewModel.prototype.bindFormula = function(){
-	var _cell = _getCurrentCell();
+ViewModel.prototype.handleArrowKey = function(direction,e){
+	var self = this;
+	if(!self.isEditingFormula()){
+		var _oldCell = this.currentCell;
+		if(_oldCell){
+			$(_oldCell.getSelector()).removeClass('activeCell');
+		}
+		self.navigateNext(direction);
+		self.bindFormula(self.currentCell);	
+		if(this.currentCell){
+			$(this.currentCell.getSelector()).addClass('activeCell');
+			$(this.currentCell.getSelector()).focus();
+		}
+	}
+
+	if(e && e.preventDefault && !self.isEditingFormula()){
+		e.preventDefault();
+	}
+};
+
+ViewModel.prototype.selectCell = function(){
+	var self = this;
+	if(this.currentCell){
+			$(this.currentCell.getSelector()).removeClass('activeCell');
+		}
+	self.bindFormula();	
+	if(this.currentCell){
+		$(this.currentCell.getSelector()).addClass('activeCell');
+	}
+};
+
+ViewModel.prototype.changeFormula = function(_cell){
+	var _rowSelector = '#Row_' + _cell.Row + ' td input[name="Name"]';
+	var _currRowName = $(_rowSelector).val();
+	var _currRow = this.getRowByName(_currRowName);
+	
+
+	//we can't do this using knockout b/c this event-handler is being
+	//called before the knockout observable gets updated
+	//so...this doesn't work in all cases:
+	//_currRow[_cell.Col](this.currentFormula());	
+	_currRow[_cell.Col]($('#currentFormula').val());
+};
+
+ViewModel.prototype.bindFormula = function(_ccell){
+	var _cell = _ccell;
+
 	if(!_cell){
 		return false;
 	}
@@ -114,13 +162,13 @@ ViewModel.prototype.bindFormula = function(){
 
 	this.currentFormula($(_cellSelector).val());
 
-	this.currentCell = _cell;
-	return ;
+	return true;
 };
 
 ViewModel.prototype.editFormula = function(){
-	if(this.bindFormula()){
+	if(this.bindFormula(_getCurrentCell())){
 		$('#currentFormula').focus();
+		this.isEditingFormula(true);
 	}
 };
 
@@ -155,6 +203,7 @@ ViewModel.prototype.navigateNext = function(direction){
 	selector = '#Row_' + _cell.Row + ' [name=' + _cell.Col + ']';
 
 	$(selector).focus();
+	this.currentCell = _cell;
 };
 
 ViewModel.prototype.loadProgram = function(){
@@ -481,4 +530,12 @@ row.prototype.isEmpty = function(){
 		|| stringHasValue(this.Input());
 
 	return !hasVal;
+};
+
+row.prototype.bindFormula = function(){
+	return this.Sheet.bindFormula();
+};
+
+row.prototype.selectCell = function(){
+	return this.Sheet.selectCell();
 };

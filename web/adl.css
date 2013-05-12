@@ -1,7 +1,12 @@
 .error {
 	background-color: red;
-};
-
+}
+.activeCell{
+	background-color: #CBFFB2;
+}
+.activeEditor{
+	background-color: #FFFFA3;
+}
 
 @charset "utf-8";
 /* CSS Document */
