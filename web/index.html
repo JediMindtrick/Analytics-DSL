@@ -17,8 +17,13 @@
 		<h1>Analytics DSL Editor</h1>
 		<select data-bind="options: programNames, value: currentProgramName"></select>
 		<button data-bind="click: loadProgram">Load Program</button>
-
+		<br />
+		<label>Errors & Messages:</label>
 		<input style="width:100%;" data-bind="enable: false, value: currentError" />
+		<br>
+		<label>f(x):</label>
+		<br>
+		<textarea id="currentFormula" style="width:100%; height: 20px;" data-bind="value: currentFormula, hasFocus: isEditingFormula"></textarea>
 	
 <table class="tableone" style="height:500px;">
     <thead>
@@ -36,10 +41,10 @@
 	            	<thead></thead>                   
 	                <tbody data-bind="foreach: rows" >
 	                    <tr data-bind="attr: { id: 'Row_' + Id }, css: { error: IsError }, event: { mouseover: setCurrentError}">
-	                        <td class="tdFIX"><!--td width bug fix: input width overrides fixed width here. -->
+	                        <td class="tdFIX">
 	                            <input name="Name" type="text" data-bind="value: Name, event: {focus: setCurrentError}" /></td>
 	                        <td class="tdFIX">
-	                        	<textarea name="Value" data-bind="value: Value, event: {focus: setCurrentError}"></textarea>
+	                        	<textarea style="height:15px;" name="Value" data-bind="value: Value, event: {focus: setCurrentError}"></textarea>
 	                            </td>
 	                        <td class="tdFIX">
 	                        	<input name="Input" data-bind="value: Input, disable: !$data.isInput(), event: {focus: setCurrentError}" />

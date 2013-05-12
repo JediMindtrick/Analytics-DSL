@@ -41,6 +41,10 @@ var ViewModel = function(){
 	};
 	this.paused = false;
 
+	this.isEditingFormula = ko.observable(false);
+	this.currentFormula = ko.observable('your code here');
+	this.currentCell = null;
+
 	this.rows = ko.observableArray([]);
 	this.programCode = ko.observable('');
 	this.currentError = ko.observable('error');
@@ -61,16 +65,63 @@ ViewModel.prototype.initShortcuts = function(){
 	var self = this;
 	shortcut.add("Up",function() {
 		self.navigateNext('up');
+		self.bindFormula();	
 	});
 	shortcut.add("Down",function() {
 		self.navigateNext('down');
+		self.bindFormula();	
 	});
 	shortcut.add("Left",function() {
 		self.navigateNext('left');
+		self.bindFormula();	
 	});
 	shortcut.add("Right",function() {
 		self.navigateNext('right');
+		self.bindFormula();	
 	});
+	shortcut.add("Enter",function(){
+		if(self.isEditingFormula()){
+			return;
+		}else{
+			self.editFormula();			
+		}
+	});//,{propagate: false});
+	shortcut.add("Ctrl+Enter",function(){
+		var _cell = self.currentCell;
+		if(_cell){
+			var selector = '#Row_' + _cell.Row + ' [name=' + _cell.Col + ']';
+
+			$(selector).focus();
+		}
+	});
+};
+
+ViewModel.prototype.bindFormula = function(){
+	var _cell = _getCurrentCell();
+	if(!_cell){
+		return false;
+	}
+	var _rowSelector = '#Row_' + _cell.Row + ' td input[name="Name"]';
+	var _currRowName = $(_rowSelector).val();
+
+	var _currRow = this.getRowByName(_currRowName);
+
+	//we can't do this using knockout b/c this event-handler is being
+	//called before the knockout observable gets updated
+	//so...this doesn't work in all cases:
+	//this.currentFormula(_currRow[_cell.Col]());	
+	var _cellSelector = '#Row_' + _cell.Row + ' [name=' + _cell.Col + ']';
+
+	this.currentFormula($(_cellSelector).val());
+
+	this.currentCell = _cell;
+	return ;
+};
+
+ViewModel.prototype.editFormula = function(){
+	if(this.bindFormula()){
+		$('#currentFormula').focus();
+	}
 };
 
 var _columnNames = ['Name','Value','Input'];
@@ -412,8 +463,11 @@ row.prototype.isInput = function(){
 	return false;
 };
 
-row.prototype.setCurrentError = function(name){
+row.prototype.makeActiveFormula = function(){
+	this.Sheet.editFormula();
+};
 
+row.prototype.setCurrentError = function(name){
 	this.Sheet.currentError('');
 	if(this.ErrorInfo && this.ErrorInfo.message){
 		this.Sheet.currentError(this.ErrorInfo.message);

@@ -1,5 +1,8 @@
 var _getCurrentCell = function(){
 	var _row = $(document.activeElement).closest('tr').attr('id');
+	if(!_row){
+		return null;
+	}
 	_row = _row.replace('Row_','');
 
 	var _col = $(document.activeElement).attr('name');
