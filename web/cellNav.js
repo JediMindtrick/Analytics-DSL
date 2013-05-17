@@ -1,12 +1,16 @@
-var _getCurrentCell = function(){
-	var _row = $(document.activeElement).closest('tr').attr('id');
+var _getCurrentCell = function(clicked){
+	var el = clicked ? clicked : document.activeElement;
+	var _row = $(el).closest('tr').attr('id');
 	if(!_row){
 		return null;
 	}
 	_row = _row.replace('Row_','');
 
-	var _col = $(document.activeElement).attr('name');
-	_col = _col.replace('Row_','');
+	var _col = $(el).closest('[name]').attr('name');
+
+	if(!_col){
+		_col = $(el).find(':first-child [name]').attr('name');
+	}
 	
 	return new CellNav(parseInt(_row),_col);
 };

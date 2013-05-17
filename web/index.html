@@ -9,7 +9,6 @@
 		<script type="text/javascript" src="./shortcut.js"></script>
 		<script type="text/javascript" src="./jquery-2.0.0.min.js"></script>
 		<script type="text/javascript" src="./program1.js"></script>
-<!--		<script type="text/javascript" src="./program2.js"></script>-->
 	</head>
 	<body>
 		<a href="https://github.com/JediMindtrick/Analytics-DSL">License & Github repo</a><br />
@@ -22,17 +21,17 @@
 		<label>Errors & Messages:</label>
 		<input style="width:100%;" data-bind="enable: false, value: currentError" />
 		<br>
-		<label>f(x):&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;&lt;focus on cell and [Enter] to edit a formula, [Ctrl+Enter] to update the formula in cell&gt;&gt;</label>
+		<label>f(x):&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;&lt;Focus on a cell and [Enter] to edit a formula, [Ctrl+Enter] to update the formula in the cell.  All strings enclosed in single quotes please.&gt;&gt;</label>
 		<br>
-		<textarea id="currentFormula" style="width:100%; height: 20px;" data-bind="value: currentFormula, hasFocus: isEditingFormula, css: { activeEditor: isEditingFormula }"></textarea>
+		<textarea id="currentFormula" style="width:100%; height: 90px;" data-bind="enable: isEditingFormula, hasFocus: isEditingFormula, css: { activeEditor: isEditingFormula }, event: { blur: updateFormula }"></textarea>
 	
-<table class="tableone" style="height:500px;">
+<table class="tableone" style="height:400px;">
     <thead>
         <tr>
-            <th style="width:176px;">Name</th>
-            <th style="width:176px;">Value</th>
-            <th style="width:176px;">Input</th>
-            <th style="width:176px;">Result</th>
+	        <th style="width:20%;">Name</th>
+            <th style="width:40%;">Value</th>
+            <th style="width:20%;">Input</th>
+            <th style="width:20%;">Result</th>
         </tr>
     </thead>
     <tbody>
@@ -41,19 +40,14 @@
 	            <table class="tabletwo">   
 	            	<thead></thead>                   
 	                <tbody data-bind="foreach: rows" >
-	                    <tr data-bind="attr: { id: 'Row_' + Id }, css: { error: IsError }">
-	                    	<!--
-	                    <tr data-bind="attr: { id: 'Row_' + Id }, css: { error: IsError }, event: { mouseover: setCurrentError}">-->
-	                        <td class="tdFIX">
-	                            <input name="Name" type="text" data-bind="value: Name, event: {focus: setCurrentError}, click: selectCell" /></td>
-	                        <td class="tdFIX">
-	                        	<textarea style="height:15px;" name="Value" data-bind="value: Value, event: {focus: setCurrentError}, click: selectCell"></textarea>
-	                            </td>
-	                        <td class="tdFIX">
-	                        	<input name="Input" data-bind="value: Input, disable: !$data.isInput(), event: {focus: setCurrentError}, click: selectCell" />
-	                            </td>
-	                        <td class="tdFIX">
-	                        	<input name="Result" type="text" data-bind="value: Result, disable: true, event: {focus: setCurrentError}" />
+	                    <tr style="height: 20px; border: solid thin black;" data-bind="attr: { id: 'Row_' + Id }, css: { error: IsError }">
+	                        <td style="width: 20%;" class="tdFIX" data-bind="click: selectCell, text: Name" name="Name">
+	                        </td>
+	                        <td style="width: 40%; border-left: solid thin black;" class="tdFIX" data-bind="click: selectCell, text: FormattedValue" name="Value">
+	                        </td>
+	                        <td style="width: 20%; border-left: solid thin black;" class="tdFIX" data-bind="click: selectCell, text: Input" name="Input">
+	                        </td>
+	                        <td style="width: 20%; border-left: solid thin black;" class="tdFIX" data-bind="click: selectCell, text: Result" name="Result">
 	                        </td>
 	                    </tr>
 	                </tbody>

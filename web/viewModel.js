@@ -36,13 +36,12 @@ var ViewModel = function(){
 	this.programNames = ko.observableArray(['New','Load From Text','Program1'/*,'Program2'*/]);
 	this.currentProgramName = ko.observable('Program1');
 	this.programs = {
-		'Program1': program1,
-	//	'Program2': program2
+		'Program1': program1
 	};
 	this.paused = false;
 
 	this.isEditingFormula = ko.observable(false);
-	this.currentFormula = ko.observable('your formula here');
+	$('#currentFormula').val('your formula here');
 	this.currentCell = null;
 
 	this.rows = ko.observableArray([]);
@@ -89,14 +88,23 @@ ViewModel.prototype.initShortcuts = function(){
 	shortcut.add("Ctrl+Enter",function(){
 		var _cell = self.currentCell;
 		if(_cell && self.isEditingFormula()){
-			self.changeFormula(_cell);
-
-			var _cellSelector = '#Row_' + _cell.Row + ' [name=' + _cell.Col + ']';
-			$(_cellSelector).focus();
-
-			self.isEditingFormula(false);
+			self.updateFormula();
 		}
 	},{propagate: false});
+};
+
+ViewModel.prototype.updateFormula = function(){
+	var self = this;
+
+	var _cell = self.currentCell;
+
+	self.changeFormula(_cell);
+
+	var _cellSelector = '#Row_' + _cell.Row + ' td[name=' + _cell.Col + ']';
+
+	self.isEditingFormula(false);
+
+	$(_cellSelector).focus();
 };
 
 ViewModel.prototype.handleArrowKey = function(direction,e){
@@ -106,8 +114,11 @@ ViewModel.prototype.handleArrowKey = function(direction,e){
 		if(_oldCell){
 			$(_oldCell.getSelector()).removeClass('activeCell');
 		}
+		
 		self.navigateNext(direction);
 		self.bindFormula(self.currentCell);	
+		self.updateError(self.currentCell);
+
 		if(this.currentCell){
 			$(this.currentCell.getSelector()).addClass('activeCell');
 			$(this.currentCell.getSelector()).focus();
@@ -119,28 +130,45 @@ ViewModel.prototype.handleArrowKey = function(direction,e){
 	}
 };
 
-ViewModel.prototype.selectCell = function(){
-	var self = this;
-	if(this.currentCell){
-			$(this.currentCell.getSelector()).removeClass('activeCell');
+ViewModel.prototype.selectCell = function(item,event){
+	var self = item.Sheet;
+	if(self.currentCell){
+			$(self.currentCell.getSelector()).removeClass('activeCell');
 		}
-	self.bindFormula();	
-	if(this.currentCell){
-		$(this.currentCell.getSelector()).addClass('activeCell');
+
+	self.currentCell = _getCurrentCell($(event.target));
+
+	self.bindFormula(self.currentCell);	
+	self.updateError(self.currentCell);
+
+	if(self.currentCell){
+		$(self.currentCell.getSelector()).addClass('activeCell');
 	}
 };
 
 ViewModel.prototype.changeFormula = function(_cell){
-	var _rowSelector = '#Row_' + _cell.Row + ' td input[name="Name"]';
-	var _currRowName = $(_rowSelector).val();
+	var _rowSelector = '#Row_' + _cell.Row + ' td[name="Name"]';
+	var _currRowName = $(_rowSelector).text();
 	var _currRow = this.getRowByName(_currRowName);
 	
-
-	//we can't do this using knockout b/c this event-handler is being
-	//called before the knockout observable gets updated
-	//so...this doesn't work in all cases:
-	//_currRow[_cell.Col](this.currentFormula());	
 	_currRow[_cell.Col]($('#currentFormula').val());
+};
+
+ViewModel.prototype.updateError = function(_ccell){
+	var _cell = _ccell;
+
+	if(!_cell){
+		return false;
+	}
+	var _rowSelector = '#Row_' + _cell.Row + ' td[name="Name"]';
+	var _currRowName = $(_rowSelector).text();
+
+	var _currRow = this.getRowByName(_currRowName);
+
+	this.currentError('');
+	if(_currRow.ErrorInfo && _currRow.ErrorInfo.message){
+		this.currentError(_currRow.ErrorInfo.message);
+	}
 };
 
 ViewModel.prototype.bindFormula = function(_ccell){
@@ -149,33 +177,33 @@ ViewModel.prototype.bindFormula = function(_ccell){
 	if(!_cell){
 		return false;
 	}
-	var _rowSelector = '#Row_' + _cell.Row + ' td input[name="Name"]';
-	var _currRowName = $(_rowSelector).val();
+	var _rowSelector = '#Row_' + _cell.Row + ' td[name="Name"]';
+	var _currRowName = $(_rowSelector).text();
 
 	var _currRow = this.getRowByName(_currRowName);
-
-	//we can't do this using knockout b/c this event-handler is being
-	//called before the knockout observable gets updated
-	//so...this doesn't work in all cases:
-	//this.currentFormula(_currRow[_cell.Col]());	
+	
 	var _cellSelector = '#Row_' + _cell.Row + ' [name=' + _cell.Col + ']';
 
-	this.currentFormula($(_cellSelector).val());
+	$('#currentFormula').val(_currRow[_cell.Col]());
 
 	return true;
 };
 
 ViewModel.prototype.editFormula = function(){
-	if(this.bindFormula(_getCurrentCell())){
-		$('#currentFormula').focus();
+
+	if(this.bindFormula(this.currentCell)){
 		this.isEditingFormula(true);
+		$('#currentFormula').focus();
 	}
 };
 
-var _columnNames = ['Name','Value','Input'];
+var _columnNames = ['Name','Value','Input', 'Result'];
 ViewModel.prototype.navigateNext = function(direction){
 
 	var _cell = _getCurrentCell();
+	if(!_cell){
+		_cell = this.currentCell;
+	}
 
 	if(direction === 'up'){
 		_cell = _cell.up();
@@ -193,14 +221,6 @@ ViewModel.prototype.navigateNext = function(direction){
 
 	//go to the next cell
 	var selector = '#Row_' + _cell.Row + ' [name=' + _cell.Col + ']';
-
-	//bump if selected cell is disabled
-	if($(selector).is(':disabled')
-		&& (direction === 'up' || direction === 'down')){
-			_cell = _cell.left();
-	}
-
-	selector = '#Row_' + _cell.Row + ' [name=' + _cell.Col + ']';
 
 	$(selector).focus();
 	this.currentCell = _cell;
@@ -413,7 +433,7 @@ ViewModel.prototype.getInputs = function() {
 		if( stringHasValue(curr.Name().trim())){
 			var _in = curr.Input();
 			if(_in && _in !== ''){
-				_in = JSON.parse(curr.Input());
+				_in = eval(curr.Input());
 			}else{
 				_in = null;
 			}
@@ -431,7 +451,7 @@ ViewModel.prototype.mapOutputs = function(outputs){
 
 	for(var property in outputs){
 		if(outputs.hasOwnProperty(property)){
-			_mapValue(_rows,property,outputs[property].result);
+			_mapValue(_rows,property,outputs[property]);
 		}
 	}
 };
@@ -440,7 +460,10 @@ var _mapValue = function(rows,name,value){
 	for(var i = 0, l = rows.length; i < l; i++){
 		var curr = rows[i];
 		if(curr.Name() === name){
-			curr.Result(value);
+			curr.Result(value.result);
+			if(value.errors && value.errors.length > 0){
+				curr.ErrorInfo.message = value.errors[0].message;
+			}
 		}
 	}
 };
@@ -450,6 +473,8 @@ ViewModel.prototype.define = function(name,value){
 };
 
 var row = function(parent){
+	var self = this;
+
 	this.Id = null;
 	this.Sheet = parent;
 	this.ErrorInfo = {};
@@ -457,6 +482,15 @@ var row = function(parent){
 	this.ErrorCondition = ko.observable('');
 	this.Name = ko.observable('');
 	this.Value = ko.observable('');
+	this.FormattedValue = ko.computed(function(){
+		var _val = self.Value();
+
+		if(_val.length >= 50){
+			_val = _val.substring(0,49) + '...';
+		}
+
+		return _val;
+	});
 	this.Input = ko.observable('');
 	this.Result = ko.observable('');
 };
@@ -516,7 +550,7 @@ row.prototype.makeActiveFormula = function(){
 	this.Sheet.editFormula();
 };
 
-row.prototype.setCurrentError = function(name){
+row.prototype.setCurrentError = function(){
 	this.Sheet.currentError('');
 	if(this.ErrorInfo && this.ErrorInfo.message){
 		this.Sheet.currentError(this.ErrorInfo.message);
@@ -536,6 +570,9 @@ row.prototype.bindFormula = function(){
 	return this.Sheet.bindFormula();
 };
 
-row.prototype.selectCell = function(){
-	return this.Sheet.selectCell();
+//ViewModel.prototype.selectCell = function(item,event){
+
+row.prototype.selectCell = function(item,event){
+	this.setCurrentError();
+	return this.Sheet.selectCell(item,event);
 };
