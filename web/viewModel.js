@@ -33,7 +33,7 @@ var Engine = require('../lib/executionEngine.js').Engine;
 var ViewModel = function(){
 	var self = this;
 
-	this.isOpen = ko.observable(false);
+	this.displayProgram = ko.observable(false);
 
 	this.programNames = ko.observableArray(['New','Load From Text','Program1'/*,'Program2'*/]);
 	this.currentProgramName = ko.observable('Program1');
@@ -56,7 +56,7 @@ var ViewModel = function(){
 };
 
 ViewModel.prototype.open = function() {
-  this.isOpen(true);
+  this.displayProgram(true);
 };
 
 

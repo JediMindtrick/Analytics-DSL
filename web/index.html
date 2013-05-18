@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 	<head>
+		<title>Analytics DSL+ Editor</title>
 
 		<link href="./jquery-ui-1.10.3.custom/css/jquery-ui-custom.min.css" rel="stylesheet">
 		<link rel="stylesheet" type="text/css" href="./adl.css">
@@ -18,16 +19,14 @@
 
 	</head>
 	<body>
-		<a href="https://github.com/JediMindtrick/Analytics-DSL">License & Github repo</a><br />
-		Copyright &copy; 2013 by Brandon Wilhite
-		<h1>Analytics DSL Editor</h1>
-		<h2>Only tested in Chrome, ymmv.</h2>
-		<select data-bind="options: programNames, value: currentProgramName"></select>
-		<button data-bind="click: loadProgram">Load Program</button>
 
-		<button data-bind="click: open, disable: isOpen" style="float:right;">Display Program</button>
-		<br />
-		<br />
+		<p>Analytics DSL+ Editor</p>
+		<div style="margin-bottom: 10px;" data-bind="buttonset: { refreshOn: menuItems }">
+			<!-- ko foreach: menuItems -->
+				<input type="checkbox" data-bind="attr: { id: id }, click: selectMenuItem" />
+				<label data-bind="attr: { 'for': id }, text: label"></label>
+			<!-- /ko -->
+		</div>
 
 		<label>Errors & Messages:</label>
 		<input style="width:100%;" data-bind="enable: false, value: currentError" />
@@ -38,42 +37,63 @@
 		<textarea id="currentFormula" style="width:100%; height: 90px;" data-bind="enable: isEditingFormula, hasFocus: isEditingFormula, css: { activeEditor: isEditingFormula }, event: { blur: updateFormula }"></textarea>
 	
 	
-<table class="tableone" style="height:400px;">
-    <thead>
-        <tr>
-	        <th style="width:20%;">Name</th>
-            <th style="width:40%;">Value</th>
-            <th style="width:20%;">Input</th>
-            <th style="width:20%;">Result</th>
-        </tr>
-    </thead>
-    <tbody>
-	    <tr><td colspan="4" style="padding-top:0;">
-	        <div class="innerb">
-	            <table class="tabletwo">   
-	            	<thead></thead>                   
-	                <tbody data-bind="foreach: rows" >
-	                    <tr style="height: 20px; border: solid thin black;" data-bind="attr: { id: 'Row_' + Id }, css: { error: IsError }">
-	                        <td style="width: 20%;" class="tdFIX" data-bind="click: selectCell, text: Name" name="Name">
-	                        </td>
-	                        <td style="width: 40%; border-left: solid thin black;" class="tdFIX" data-bind="click: selectCell, text: FormattedValue" name="Value">
-	                        </td>
-	                        <td style="width: 20%; border-left: solid thin black;" class="tdFIX" data-bind="click: selectCell, text: Input" name="Input">
-	                        </td>
-	                        <td style="width: 20%; border-left: solid thin black;" class="tdFIX" data-bind="click: selectCell, text: Result" name="Result">
-	                        </td>
-	                    </tr>
-	                </tbody>
-	            </table>
-	        </div>
-	    </td></tr>
-	</tbody>
-</table>
+		<table class="tableone" style="height:400px;">
+		    <thead>
+		        <tr>
+			        <th style="width:20%;">Name</th>
+		            <th style="width:40%;">Value</th>
+		            <th style="width:20%;">Input</th>
+		            <th style="width:20%;">Result</th>
+		        </tr>
+		    </thead>
+		    <tbody>
+			    <tr><td colspan="4" style="padding-top:0;">
+			        <div class="innerb">
+			            <table class="tabletwo">   
+			            	<thead></thead>                   
+			                <tbody data-bind="foreach: rows" >
+			                    <tr style="height: 20px; border: solid thin black;" data-bind="attr: { id: 'Row_' + Id }, css: { error: IsError }">
+			                        <td style="width: 20%;" class="tdFIX" data-bind="click: selectCell, text: Name" name="Name">
+			                        </td>
+			                        <td style="width: 40%; border-left: solid thin black;" class="tdFIX" data-bind="click: selectCell, text: FormattedValue" name="Value">
+			                        </td>
+			                        <td style="width: 20%; border-left: solid thin black;" class="tdFIX" data-bind="click: selectCell, text: Input" name="Input">
+			                        </td>
+			                        <td style="width: 20%; border-left: solid thin black;" class="tdFIX" data-bind="click: selectCell, text: Result" name="Result">
+			                        </td>
+			                    </tr>
+			                </tbody>
+			            </table>
+			        </div>
+			    </td></tr>
+			</tbody>
+		</table>
 
 
-		<div data-bind="dialog: { isOpen: isOpen, width: '720px' }">
-			<textarea style="width:100%; height:400px;"  data-bind="value: programCode, enable: currentProgramName() === 'Load From Text'" ></textarea>  			
+		<div data-bind="dialog: { isOpen: displayProgram, width: '720px', title: 'View Source' }">
+			<textarea style="width:100%; height:400px;"  data-bind="value: programCode, enable: false" ></textarea>  			
 		</div>
+
+		<div data-bind="dialog: { isOpen: displayAbout, width: '400px', title: 'Analytics DSL+ Editor' }">
+			<div style="width:100%; height:100px;">
+
+				<a href="https://github.com/JediMindtrick/Analytics-DSL">License & Github repo</a>
+				<br>
+				<p>Copyright &copy; 2013 by Brandon Wilhite</p>
+
+			</div>
+		</div>
+
+		<div data-bind="dialog: { isOpen: displayLoad, width: '400px', title: 'Load Program' }">
+			<div style="width:100%; height:100px;">
+				<select data-bind="options: programNames, value: currentProgramName"></select>
+				<button data-bind="click: loadProgram">Ok</button>
+				<div data-bind="visible: currentProgramName() === 'Load From Text'">
+					<textarea style="width:100%; height:400px;"  data-bind="value: programCode, enable: currentProgramName() === 'Load From Text'" ></textarea> 
+				</div>
+			</div>
+		</div>
+
 
 	</body>
 
@@ -82,7 +102,43 @@
 				$('button').button();
 			});
 
+			var _idCounter = 0;
+			var MenuItem = function(label,selectFunc) {
+				var id = _idCounter++;
+				this.id = 'menuItem' + id.toString();
+				this.label = label;
+
+				var _select = selectFunc ? selectFunc 
+					: function(){
+						alert('clicked ' + label);
+				};
+
+				this.selectMenuItem = _select;
+			};
+
 			var vm = new ViewModel();
+
+			vm._oldLoad = vm.loadProgram;
+
+			vm.loadProgram = function(){
+				vm._oldLoad();
+				vm.displayLoad(false);
+			};
+
+			vm.displayAbout = ko.observable(false);
+			vm.displayLoad = ko.observable(false);
+
+			vm.menuItems = ko.observableArray([				
+				new MenuItem('Load', function(){
+					vm.displayLoad(true);
+				}),
+				new MenuItem('View Source',function(){
+					vm.displayProgram(true);
+				}), 
+				new MenuItem('About', function(){
+					vm.displayAbout(true);
+				})
+			]);
 
 			ko.applyBindings(vm);
 		</script>
