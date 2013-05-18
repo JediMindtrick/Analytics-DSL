@@ -3,6 +3,10 @@
 	<head>
 		<title>Analytics DSL+ Editor</title>
 
+		<script type="text/javascript" src="http://codemirror.net/lib/codemirror.js"></script>
+		<script type="text/javascript" src="http://codemirror.net/mode/javascript/javascript.js"></script>
+		<link rel="stylesheet" type="text/css" href="http://codemirror.net/lib/codemirror.css"/>
+
 		<link href="./jquery-ui-1.10.3.custom/css/jquery-ui-custom.min.css" rel="stylesheet">
 		<link rel="stylesheet" type="text/css" href="./adl.css">
 
@@ -34,7 +38,7 @@
 		<br>
 
 		<label>f(x):</label>
-		<textarea id="currentFormula" style="width:100%; height: 90px;" data-bind="enable: isEditingFormula, hasFocus: isEditingFormula, css: { activeEditor: isEditingFormula }, event: { blur: updateFormula }"></textarea>
+		<textarea id="currentFormula" style="width:100%; height: 90px;" data-bind="value: currentFormula, enable: isEditingFormula, hasFocus: isEditingFormula, css: { activeEditor: isEditingFormula }, event: { blur: updateFormula }, codemirror: { 'lineNumbers': true, 'matchBrackets': true, 'mode': 'text/javascript' }"></textarea>
 	
 	
 		<table class="tableone" style="height:400px;">
@@ -109,6 +113,56 @@
 	</body>
 
 		<script type="text/javascript">
+/*
+modified from 
+http://stackoverflow.com/questions/13375612/how-to-integrate-codemirror-into-knockoutjs
+because the change events didn't seem to be marshalling correctly and also the 'hasFocus'
+binding was broken by codemirror
+...still much thanks to original author for getting me started
+*/
+			ko.bindingHandlers.codemirror = {
+
+			    init: function(element, valueAccessor, allBindingsAccessor, viewModel) {
+			    	
+			        var editor = CodeMirror.fromTextArea(element, options);
+			        element.editor = editor;
+			        editor.setValue(allBindingsAccessor().value());
+			        editor.refresh();
+			        var wrapperElement = $(editor.getWrapperElement()); 
+			            
+			        ko.utils.domNodeDisposal.addDisposeCallback(element, function() {
+			            wrapperElement.remove();
+			        });
+
+			        if(allBindingsAccessor().hasFocus){
+
+			        	allBindingsAccessor().hasFocus.subscribe(function(newValue) {
+							if(newValue){
+								editor.focus();
+								editor.isEditing = true;
+							}else{
+								editor.isEditing = false;
+							}
+						});
+			        }
+
+			        CodeMirror.on(editor, "change", function(){
+			        	if(editor.isEditing){
+				        	editor.isChanging = true;
+			                allBindingsAccessor().value(editor.getValue());
+			                editor.isChanging = false;			        		
+			        	}
+			        });
+			    },
+			    update: function(element, valueAccessor, allBindingsAccessor) {	
+			        var editor = element.editor;
+			        if(!editor.isChanging){
+				        editor.setValue(allBindingsAccessor().value());
+				        editor.refresh();
+			    	}
+			    } 
+			};
+
 			$(function(){
 				$('button').button();
 			});

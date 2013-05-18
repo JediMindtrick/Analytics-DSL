@@ -43,7 +43,7 @@ var ViewModel = function(){
 	this.paused = false;
 
 	this.isEditingFormula = ko.observable(false);
-	$('#currentFormula').val('your formula here');
+	this.currentFormula = ko.observable('your formula here');
 	this.currentCell = null;
 
 	this.rows = ko.observableArray([]);
@@ -109,6 +109,8 @@ ViewModel.prototype.updateFormula = function(){
 
 	var _cellSelector = '#Row_' + _cell.Row + ' td[name=' + _cell.Col + ']';
 
+	$(_cellSelector).focus();
+
 	self.isEditingFormula(false);
 
 	$(_cellSelector).focus();
@@ -157,8 +159,8 @@ ViewModel.prototype.changeFormula = function(_cell){
 	var _rowSelector = '#Row_' + _cell.Row + ' td[name="Name"]';
 	var _currRowName = $(_rowSelector).text();
 	var _currRow = this.getRowByName(_currRowName);
-	
-	_currRow[_cell.Col]($('#currentFormula').val());
+
+	_currRow[_cell.Col](this.currentFormula());	
 };
 
 ViewModel.prototype.updateError = function(_ccell){
@@ -191,7 +193,7 @@ ViewModel.prototype.bindFormula = function(_ccell){
 	
 	var _cellSelector = '#Row_' + _cell.Row + ' [name=' + _cell.Col + ']';
 
-	$('#currentFormula').val(_currRow[_cell.Col]());
+	this.currentFormula(_currRow[_cell.Col]());
 
 	return true;
 };
@@ -200,7 +202,6 @@ ViewModel.prototype.editFormula = function(){
 
 	if(this.bindFormula(this.currentCell)){
 		this.isEditingFormula(true);
-		$('#currentFormula').focus();
 	}
 };
 

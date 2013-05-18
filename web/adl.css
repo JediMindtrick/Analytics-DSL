@@ -8,6 +8,7 @@
 	background-color: #FFFFA3;
 }
 
+
 @charset "utf-8";
 /* CSS Document */
  
@@ -82,3 +83,15 @@ color:#fff;
 .td5 {width:170px;}
  
 .innerb {height:490px; overflow-y:scroll;}
+
+.CodeMirror {
+  /* Set height, width, borders, and global font properties here */
+  font-family: monospace;
+  height: 90px;
+  width: 98%;
+  border: thin solid black;
+}
+
+.CodeMirror-focused{
+	background-color: #FFFFA3;	
+}
