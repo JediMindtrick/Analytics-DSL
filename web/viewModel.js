@@ -33,6 +33,8 @@ var Engine = require('../lib/executionEngine.js').Engine;
 var ViewModel = function(){
 	var self = this;
 
+	this.isOpen = ko.observable(false);
+
 	this.programNames = ko.observableArray(['New','Load From Text','Program1'/*,'Program2'*/]);
 	this.currentProgramName = ko.observable('Program1');
 	this.programs = {
@@ -52,6 +54,11 @@ var ViewModel = function(){
 
 	this.initShortcuts();
 };
+
+ViewModel.prototype.open = function() {
+  this.isOpen(true);
+};
+
 
 ViewModel.prototype.setExample = function(){
 	var _code = program1;

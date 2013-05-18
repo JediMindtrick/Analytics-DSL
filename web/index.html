@@ -24,13 +24,19 @@
 		<h2>Only tested in Chrome, ymmv.</h2>
 		<select data-bind="options: programNames, value: currentProgramName"></select>
 		<button data-bind="click: loadProgram">Load Program</button>
+
+		<button data-bind="click: open, disable: isOpen" style="float:right;">Display Program</button>
 		<br />
+		<br />
+
 		<label>Errors & Messages:</label>
 		<input style="width:100%;" data-bind="enable: false, value: currentError" />
 		<br>
 		<label>f(x):&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;&lt;Focus on a cell and [Enter] to edit a formula, [Ctrl+Enter] to update the formula in the cell.  All strings enclosed in single quotes please.&gt;&gt;</label>
 		<br>
+
 		<textarea id="currentFormula" style="width:100%; height: 90px;" data-bind="enable: isEditingFormula, hasFocus: isEditingFormula, css: { activeEditor: isEditingFormula }, event: { blur: updateFormula }"></textarea>
+	
 	
 <table class="tableone" style="height:400px;">
     <thead>
@@ -64,10 +70,11 @@
 	</tbody>
 </table>
 
-		<div style="width: 75%; height: 400px; margin-top: 50px;">
-			<textarea style="width:100%; height:100%;"  data-bind="value: programCode, enable: currentProgramName() === 'Load From Text'" ></textarea>
+
+		<div data-bind="dialog: { isOpen: isOpen, width: '720px' }">
+			<textarea style="width:100%; height:400px;"  data-bind="value: programCode, enable: currentProgramName() === 'Load From Text'" ></textarea>  			
 		</div>
-		
+
 	</body>
 
 		<script type="text/javascript">
