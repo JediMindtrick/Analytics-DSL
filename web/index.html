@@ -31,9 +31,9 @@
 		<label>Errors & Messages:</label>
 		<input style="width:100%;" data-bind="enable: false, value: currentError" />
 		<br>
-		<label>f(x):&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;&lt;Focus on a cell and [Enter] to edit a formula, [Ctrl+Enter] to update the formula in the cell.  All strings enclosed in single quotes please.&gt;&gt;</label>
 		<br>
 
+		<label>f(x):</label>
 		<textarea id="currentFormula" style="width:100%; height: 90px;" data-bind="enable: isEditingFormula, hasFocus: isEditingFormula, css: { activeEditor: isEditingFormula }, event: { blur: updateFormula }"></textarea>
 	
 	
@@ -95,6 +95,17 @@
 		</div>
 
 
+		<div data-bind="dialog: { isOpen: displayHelp, width: '400px', title: 'Help' }">
+			<div style="width:100%; height:125px;">
+				<ul>
+					<li>Focus on a cell and [Enter] to edit a formula.</li>
+					<li>[Ctrl+Enter] to update the formula in the cell.</li>
+					<li>All strings enclosed in single quotes please. (Otherwise it will break.)</li>
+				</ul>
+			</div>
+		</div>
+
+
 	</body>
 
 		<script type="text/javascript">
@@ -127,6 +138,7 @@
 
 			vm.displayAbout = ko.observable(false);
 			vm.displayLoad = ko.observable(false);
+			vm.displayHelp = ko.observable(false);
 
 			vm.menuItems = ko.observableArray([				
 				new MenuItem('Load', function(){
@@ -134,6 +146,9 @@
 				}),
 				new MenuItem('View Source',function(){
 					vm.displayProgram(true);
+				}), 
+				new MenuItem('Help', function(){
+					vm.displayHelp(true);
 				}), 
 				new MenuItem('About', function(){
 					vm.displayAbout(true);
