@@ -1,14 +1,21 @@
 <!DOCTYPE html>
 <html>
 	<head>
+
+		<link href="./jquery-ui-1.10.3.custom/css/jquery-ui-custom.min.css" rel="stylesheet">
 		<link rel="stylesheet" type="text/css" href="./adl.css">
+
+		<script type="text/javascript" src="./jquery-2.0.0.min.js"></script>
+		<script src="./jquery-ui-1.10.3.custom/js/jquery-ui-custom.min.js"></script>
 		<script type="text/javascript" src="./knockout.js"></script>
+		<script src="./knockout-jqueryui.min.js"></script>
+
 		<script type="text/javascript" src="./app.js"></script>
 		<script type="text/javascript" src="./cellNav.js"></script>
 		<script type="text/javascript" src="./viewModel.js"></script>
 		<script type="text/javascript" src="./shortcut.js"></script>
-		<script type="text/javascript" src="./jquery-2.0.0.min.js"></script>
 		<script type="text/javascript" src="./program1.js"></script>
+
 	</head>
 	<body>
 		<a href="https://github.com/JediMindtrick/Analytics-DSL">License & Github repo</a><br />
@@ -64,6 +71,10 @@
 	</body>
 
 		<script type="text/javascript">
+			$(function(){
+				$('button').button();
+			});
+
 			var vm = new ViewModel();
 
 			ko.applyBindings(vm);
