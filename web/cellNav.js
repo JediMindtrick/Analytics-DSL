@@ -15,7 +15,7 @@ var _getCurrentCell = function(clicked){
 	return new CellNav(parseInt(_row),_col);
 };
 
-var _columnNames = ['Name','Value','Input'];
+var _columnNames = ['Name','Value','Input','Result'];
 var CellNav = function(row,col){
 	this.Row = row;
 	this.Col = col;

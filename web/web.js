@@ -18,7 +18,7 @@ var _getCurrentCell = function(clicked){
 	return new CellNav(parseInt(_row),_col);
 };
 
-var _columnNames = ['Name','Value','Input'];
+var _columnNames = ['Name','Value','Input','Result'];
 var CellNav = function(row,col){
 	this.Row = row;
 	this.Col = col;
@@ -71,6 +71,7 @@ exports.getCurrentCell = _getCurrentCell;
 module.exports=require('bovJgp');
 },{}],"bovJgp":[function(require,module,exports){
 var _getCurrentCell = require('../web/cellNav.js').getCurrentCell;
+var row = require('../web/row.js').Row;
 var _util = require('../lib/util.js');
 var stringHasValue = _util.stringHasValue;
 var hasValue = _util.hasValue;
@@ -572,6 +573,14 @@ ViewModel.prototype.define = function(name,value){
 	define(name,eval(value));
 };
 
+exports.ViewModel = ViewModel;
+},{"../web/cellNav.js":"N6sjbn","../web/row.js":"zJe2fn","../lib/executionEngine.js":1,"../lib/builder.js":2,"../lib/util.js":3}],"../web/row.js":[function(require,module,exports){
+module.exports=require('zJe2fn');
+},{}],"zJe2fn":[function(require,module,exports){
+var _util = require('../lib/util.js');
+var stringHasValue = _util.stringHasValue;
+var hasValue = _util.hasValue;
+
 var row = function(parent){
 	var self = this;
 
@@ -675,8 +684,8 @@ row.prototype.selectCell = function(item,event){
 	return this.Sheet.selectCell(item,event);
 };
 
-exports.ViewModel = ViewModel;
-},{"../web/cellNav.js":"N6sjbn","../lib/util.js":1,"../lib/builder.js":2,"../lib/executionEngine.js":3}],1:[function(require,module,exports){
+exports.Row = row;
+},{"../lib/util.js":3}],3:[function(require,module,exports){
 (function(){Function.prototype.isFunction = true;
 String.prototype.isString = true;
 Number.prototype.isNumber = true;
@@ -893,7 +902,7 @@ exports.gte = buildFunc('gte');
 exports.lte = buildFunc('lte');
 exports.cond = buildFunc('cond');
 })()
-},{"./util":1,"./operations":4}],3:[function(require,module,exports){
+},{"./util":3,"./operations":4}],1:[function(require,module,exports){
 var u = require('./util');
 var getArgs = u.getArgs;
 var hasValue = u.hasValue;
@@ -1083,7 +1092,7 @@ exports.Engine = runtimeEngine;
 exports.setReportingLevel = function(level){
 	reportingLevel = level;
 };
-},{"./util":1,"./operations":4}],4:[function(require,module,exports){
+},{"./util":3,"./operations":4}],4:[function(require,module,exports){
 (function(){/* 
 Example of how cond() works
 Taxes:{
@@ -1368,5 +1377,5 @@ var op = {
 
 exports.op = op;
 })()
-},{"./util":1}]},{},[])
+},{"./util":3}]},{},[])
 ;
