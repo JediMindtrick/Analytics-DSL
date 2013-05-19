@@ -14,11 +14,10 @@
 		<script src="./jquery-ui-1.10.3.custom/js/jquery-ui-custom.min.js"></script>
 		<script type="text/javascript" src="./knockout.js"></script>
 		<script src="./knockout-jqueryui.min.js"></script>
-
-		<script type="text/javascript" src="./app.js"></script>
-		<script type="text/javascript" src="./cellNav.js"></script>
-		<script type="text/javascript" src="./viewModel.js"></script>
 		<script type="text/javascript" src="./shortcut.js"></script>
+
+		<script type="text/javascript" src="./lib.js"></script>
+		<script type="text/javascript" src="./web.js"></script>
 		<script type="text/javascript" src="./program1.js"></script>
 
 	</head>
@@ -117,7 +116,14 @@ http://stackoverflow.com/questions/13375612/how-to-integrate-codemirror-into-kno
 
 			    init: function(element, valueAccessor, allBindingsAccessor, viewModel) {
 
+			    	var options = $.extend(valueAccessor(), {
+			            onChange: function(cm) {
+			                allBindingsAccessor().value(cm.getValue());
+			            }
+			        });
+
 			    	options.viewportMargin = Infinity;
+
 			        var editor = CodeMirror.fromTextArea(element, options);
 			        element.editor = editor;
 			        editor.setValue(allBindingsAccessor().value());
@@ -179,50 +185,53 @@ http://stackoverflow.com/questions/13375612/how-to-integrate-codemirror-into-kno
 
 			$(function(){
 				$('button').button();
-			});
 
-			var _idCounter = 0;
-			var MenuItem = function(label,selectFunc) {
-				var id = _idCounter++;
-				this.id = 'menuItem' + id.toString();
-				this.label = label;
+				var ViewModel = require('../web/viewModel.js').ViewModel;
 
-				var _select = selectFunc ? selectFunc 
-					: function(){
-						alert('clicked ' + label);
+				var _idCounter = 0;
+				var MenuItem = function(label,selectFunc) {
+					var id = _idCounter++;
+					this.id = 'menuItem' + id.toString();
+					this.label = label;
+
+					var _select = selectFunc ? selectFunc 
+						: function(){
+							alert('clicked ' + label);
+					};
+
+					this.selectMenuItem = _select;
 				};
 
-				this.selectMenuItem = _select;
-			};
+				var vm = new ViewModel();
 
-			var vm = new ViewModel();
+				vm._oldLoad = vm.loadProgram;
 
-			vm._oldLoad = vm.loadProgram;
+				vm.loadProgram = function(){
+					vm._oldLoad();
+					vm.displayLoad(false);
+				};
 
-			vm.loadProgram = function(){
-				vm._oldLoad();
-				vm.displayLoad(false);
-			};
+				vm.displayAbout = ko.observable(false);
+				vm.displayLoad = ko.observable(false);
+				vm.displayHelp = ko.observable(false);
 
-			vm.displayAbout = ko.observable(false);
-			vm.displayLoad = ko.observable(false);
-			vm.displayHelp = ko.observable(false);
+				vm.menuItems = ko.observableArray([				
+					new MenuItem('Load', function(){
+						vm.displayLoad(true);
+					}),
+					new MenuItem('View Source',function(){
+						vm.displayProgram(true);
+					}), 
+					new MenuItem('Help', function(){
+						vm.displayHelp(true);
+					}), 
+					new MenuItem('About', function(){
+						vm.displayAbout(true);
+					})
+				]);
 
-			vm.menuItems = ko.observableArray([				
-				new MenuItem('Load', function(){
-					vm.displayLoad(true);
-				}),
-				new MenuItem('View Source',function(){
-					vm.displayProgram(true);
-				}), 
-				new MenuItem('Help', function(){
-					vm.displayHelp(true);
-				}), 
-				new MenuItem('About', function(){
-					vm.displayAbout(true);
-				})
-			]);
+				ko.applyBindings(vm);
 
-			ko.applyBindings(vm);
+			});
 		</script>
 </html>

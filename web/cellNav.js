@@ -62,3 +62,5 @@ CellNav.prototype.right = function(){
 	var _c = _columnNames[newIdx];
 	return new CellNav(_r,_c);
 };
+
+exports.getCurrentCell = _getCurrentCell;

@@ -1,3 +1,4 @@
+var _getCurrentCell = require('../web/cellNav.js').getCurrentCell;
 var _util = require('../lib/util.js');
 var stringHasValue = _util.stringHasValue;
 var hasValue = _util.hasValue;
@@ -597,9 +598,9 @@ row.prototype.bindFormula = function(){
 	return this.Sheet.bindFormula();
 };
 
-//ViewModel.prototype.selectCell = function(item,event){
-
 row.prototype.selectCell = function(item,event){
 	this.setCurrentError();
 	return this.Sheet.selectCell(item,event);
 };
+
+exports.ViewModel = ViewModel;
