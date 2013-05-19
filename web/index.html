@@ -122,9 +122,16 @@ http://stackoverflow.com/questions/13375612/how-to-integrate-codemirror-into-kno
 			        element.editor = editor;
 			        editor.setValue(allBindingsAccessor().value());
 			        editor.refresh();
+
 			        $('.CodeMirror').wrap('<div class="wrapCodeMirror"></div>');
 			        var _width = $('.wrapCodeMirror').width();
-			        $('.wrapCodeMirror').resizable({maxWidth: _width, minWidth: _width});
+			        var _height = $('.wrapCodeMirror').outerHeight();
+			        $('.wrapCodeMirror').resizable({
+			        	maxWidth: _width, 
+			        	minWidth: _width,
+			        	minHeight: _height
+			        });
+
 
 			        var wrapperElement = $(editor.getWrapperElement()); 
 			            
