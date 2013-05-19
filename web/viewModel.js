@@ -233,6 +233,17 @@ ViewModel.prototype.navigateNext = function(direction){
 
 	$(selector).focus();
 	this.currentCell = _cell;
+
+	if(direction === 'down' || direction === 'up'){
+		var _rowHeight = $(selector).height();
+		var _toScroll = _cell.Row * _rowHeight;
+
+		if(direction === 'down' && _toScroll > $('.innerb').height() - 100){
+			$('.innerb').scrollTop(_toScroll);
+		}else if(direction === 'up'){
+			$('.innerb').scrollTop(_toScroll);
+		}
+	}
 };
 
 ViewModel.prototype.loadProgram = function(){
