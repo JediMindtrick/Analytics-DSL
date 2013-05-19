@@ -96,6 +96,7 @@ ViewModel.prototype.initShortcuts = function(){
 		var _cell = self.currentCell;
 		if(_cell && self.isEditingFormula()){
 			self.updateFormula();
+			self.isEditingFormula(false);
 		}
 	},{propagate: false});
 };

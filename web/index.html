@@ -135,10 +135,15 @@ binding was broken by codemirror
 
 			        if(allBindingsAccessor().hasFocus){
 
+			        	//manually manipulating the codemirror object 
+						//seems to be the only way to add AND remove focus
+						//programmatically and integrate with the knockout binding
 			        	allBindingsAccessor().hasFocus.subscribe(function(newValue) {
+			        		console.log('hasFocus event: ' + newValue.toString());
 							if(newValue){
 								editor.isEditing = true;
-								editor.options.readOnly = false;
+								editor.options.readOnly = false;							
+								$(editor.display.wrapper).addClass('CodeMirror-focused');
 								editor.focus();
 
 							}else{
