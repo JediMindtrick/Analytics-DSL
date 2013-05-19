@@ -24,19 +24,16 @@
 	</head>
 	<body>
 
-		<p>Analytics DSL+ Editor</p>
 		<div style="margin-bottom: 10px;" data-bind="buttonset: { refreshOn: menuItems }">
 			<!-- ko foreach: menuItems -->
 				<input type="checkbox" data-bind="attr: { id: id }, click: selectMenuItem" />
 				<label data-bind="attr: { 'for': id }, text: label"></label>
 			<!-- /ko -->
+			<span style="float:right;" >Analytics DSL+ Editor</span>
 		</div>
 
 		<label>Errors & Messages:</label>
 		<input id="currentError" style="width:100%;" data-bind="enable: false, value: currentError" />
-		<br>
-		<br>
-
 		<label>f(x):</label>
 		<textarea id="currentFormula" style="width:100%; height: 90px;" data-bind="value: currentFormula, enable: isEditingFormula, hasFocus: isEditingFormula, css: { activeEditor: isEditingFormula }, event: { blur: updateFormula }, codemirror: { 'lineNumbers': true, 'matchBrackets': true, 'mode': 'text/javascript' }"></textarea>
 	
@@ -115,9 +112,6 @@
 /*
 modified from 
 http://stackoverflow.com/questions/13375612/how-to-integrate-codemirror-into-knockoutjs
-because the change events didn't seem to be marshalling correctly and also the 'hasFocus'
-binding was broken by codemirror
-...still much thanks to original author for getting me started
 */
 			ko.bindingHandlers.codemirror = {
 

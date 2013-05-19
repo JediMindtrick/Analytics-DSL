@@ -235,13 +235,20 @@ ViewModel.prototype.navigateNext = function(direction){
 	this.currentCell = _cell;
 
 	if(direction === 'down' || direction === 'up'){
-		var _rowHeight = $(selector).height();
-		var _toScroll = _cell.Row * _rowHeight;
+		var _rowHeight = $(selector).outerHeight();
 
-		if(direction === 'down' && _toScroll > $('.innerb').height() - 100){
-			$('.innerb').scrollTop(_toScroll);
+		//how many rows will fit in view?
+		var _maxRows = $('.innerb').height() / _rowHeight;
+		//how many rows to hide?
+		var _hideRows = (_cell.Row + 2) - _maxRows;
+
+		//not sure why an offset of 2 extra rows is required...
+		if(direction === 'down' && _cell.Row + 2  >= _maxRows){
+			$('.innerb').scrollTop(_hideRows * _rowHeight);
+
 		}else if(direction === 'up'){
-			$('.innerb').scrollTop(_toScroll);
+			$('.innerb').scrollTop(_hideRows * _rowHeight);
+
 		}
 	}
 };
