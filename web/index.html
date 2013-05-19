@@ -35,7 +35,7 @@
 		<label>Errors & Messages:</label>
 		<input id="currentError" style="width:100%;" data-bind="enable: false, value: currentError" />
 		<label>f(x):</label>
-		<textarea id="currentFormula" style="width:100%; height: 90px;" data-bind="value: currentFormula, enable: isEditingFormula, hasFocus: isEditingFormula, css: { activeEditor: isEditingFormula }, event: { blur: updateFormula }, codemirror: { 'lineNumbers': true, 'matchBrackets': true, 'mode': 'text/javascript' }"></textarea>
+		<textarea id="currentFormula" style="width:100%; height: 90px;" data-bind="value: currentFormula, enable: isEditingFormula, hasFocus: isEditingFormula, css: { activeEditor: isEditingFormula }, event: { blur: updateFormula }, codemirror: { 'lineNumbers': true, 'matchBrackets': true, 'mode': 'text/javascript', 'viewportMargin': Infinity }"></textarea>
 	
 	
 		<table class="tableone" style="height:400px;">
@@ -117,10 +117,15 @@ http://stackoverflow.com/questions/13375612/how-to-integrate-codemirror-into-kno
 
 			    init: function(element, valueAccessor, allBindingsAccessor, viewModel) {
 
+			    	options.viewportMargin = Infinity;
 			        var editor = CodeMirror.fromTextArea(element, options);
 			        element.editor = editor;
 			        editor.setValue(allBindingsAccessor().value());
 			        editor.refresh();
+			        $('.CodeMirror').wrap('<div class="wrapCodeMirror"></div>');
+			        var _width = $('.wrapCodeMirror').width();
+			        $('.wrapCodeMirror').resizable({maxWidth: _width, minWidth: _width});
+
 			        var wrapperElement = $(editor.getWrapperElement()); 
 			            
 			        ko.utils.domNodeDisposal.addDisposeCallback(element, function() {

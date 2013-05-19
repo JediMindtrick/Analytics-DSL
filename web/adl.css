@@ -87,11 +87,22 @@ color:#fff;
 .CodeMirror {
   /* Set height, width, borders, and global font properties here */
   font-family: monospace;
-  height: 90px;
+  height: 98%;
   width: 98%;
   border: thin solid black;
 }
 
+
+.CodeMirror-scroll{
+  overflow-x: hidden; 
+  overflow-y: hidden;
+}
+
 .CodeMirror-focused{
 	background-color: #FFFFA3;	
+}
+
+.wrapCodeMirror{
+  height: 90px;
+  border: thin solid black;
 }
